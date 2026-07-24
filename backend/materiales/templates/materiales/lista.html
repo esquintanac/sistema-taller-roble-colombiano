@@ -17,6 +17,7 @@
                 <th>Unidad Medida</th>
                 <th>Costo</th>
                 <th>Stock</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -28,6 +29,10 @@
                 <td>{{ m.unidad_medida }}</td>
                 <td>{{ m.costo_unitario }}</td>
                 <td>{{ m.stock }}</td>
+                <td>
+                    <a href="{% url 'materiales:editar' m.id_material %}">Editar</a>
+                    <a href="{% url 'materiales:eliminar' m.id_material %}">Eliminar</a>
+                </td>
             </tr>
             {% empty %}
             <tr><td colspan="6">No hay materiales registrados todavia.</td></tr>
