@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eliminar Material . Taller del Roble Colombiano</title>
+</head>
+<body>
+    <h1>Confirmar eliminacion</h1>
+    <p>
+        ¿Estas seguro que quieres eliminar el material
+        <strong>{{ material.nombre_material }}</strong> (ID #{{ material.id_material }})?
+        Esta accion no se puede deshacer.
+    </p>
+
+    <form action="{% url 'materiales:eliminar' material.id_material %}" method="post">
+        {% csrf_token %}
+        <button type="submit" style="color: red;">Si, eliminar</button>
+    </form>
+
+    <br/>
+    <a href="{% url 'materiales:lista' %}">Cancelar</a>
+</body>
+</html>
