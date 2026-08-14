@@ -24,4 +24,5 @@ urlpatterns = [
     path('', include("materiales.urls")),
     path("api/", include("api.routes.auth_routes")),
     path("api/", include("api.routes.material_routes")),
+    path("api/", include("api.routes.cliente_routes")),
 ]
