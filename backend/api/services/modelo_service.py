@@ -7,10 +7,12 @@ Ruta: backend/api/services/modelo_service.py
 from src.dao.modelo_dao import ModeloDAO
 from src.models.modelo import Modelo
 from api.services.calculadora_service import CalculadoraService
+from src.dao.historial_dao import HistorialDAO
 
 
 class ModeloService:
     dao = ModeloDAO()
+    historial_dao = HistorialDAO()
 
     @staticmethod
     def validar_datos(datos, es_actualizacion=False):
@@ -78,6 +80,15 @@ class ModeloService:
         id_nuevo = cls.dao.insertar_modelo(modelo)
         if id_nuevo is None:
             return None
+        return cls.dao.consultar_modelo_por_id(id_nuevo)
+
+        cls.historial_dao.insertar_historial_automatico(
+            id_modelo=id_nuevo,
+            id_usuario=datos["id_carpintero"],
+            id_cliente=datos["id_cliente"],
+            accion="Creación de diseño",
+        )
+
         return cls.dao.consultar_modelo_por_id(id_nuevo)
 
     @classmethod
