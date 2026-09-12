@@ -9,6 +9,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
+from api.middlewares.auth_decorators import requiere_autenticacion
 
 from api.services.auth_service import AuthService
 
@@ -80,8 +81,14 @@ def iniciar_sesion(request):
             status=status.HTTP_401_UNAUTHORIZED,
         )
 
-    # Generar el token de acceso (JWT) para las siguientes solicitudes
-    token = RefreshToken.for_user(usuario) if hasattr(usuario, "id") else None
+    # Generacion manual del token: se crea vacio y se el asignan
+    # los claims personalizados con los datos que necesitamos
+    # reconocer en cada solicitud protegida
+    refresh = RefreshToken()
+    refresh["id_usuario"] = usuario.id_usuario
+    refresh["usuario"] = usuario.usuario
+    refresh["rol"] = usuario.rol_usuario
+    refresh["nombre"] = usuario.nombre
 
     return Response(
         {
@@ -91,8 +98,23 @@ def iniciar_sesion(request):
                 "id": usuario.id_usuario,
                 "nombre": usuario.nombre,
                 "usuario": usuario.usuario,
-                "rol": usuario.rol_usuario,
+                "rol": usuario.rol_usuario
+            },
+            "tokens": {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
             },
         },
         status=status.HTTP_200_OK,
     )
+
+@api_view(["GET"])
+@requiere_autenticacion
+def perfil(request):
+    """
+    GET /api/auth/perfil/
+    Endpoint de prueba: retorna los datos del usuario autenticado
+    segun el token enviado. Sirve para verificar que la autenticacion
+    JWT funciona antes de proteger el resto de los endpoints.
+    """
+    return Response({"exito": True, "usuario": request.usuario_actual}, status=status.HTTP_200_OK)
