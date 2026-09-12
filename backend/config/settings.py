@@ -37,6 +37,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -64,9 +65,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'materiales', # La aplicacion del proyecto registrada
+    'rest_framework',
+    'corsheaders',
+    'api',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # debe ir antes de CommonMiddleware
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -74,7 +80,22 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'api.middlewares.validation_middleware.ValidacionJSONMiddleware',
 ]
+
+# Permite que React (puerto 5173) consuma esta API sin bloqueo del navegador
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+]
+
+REST_FRAMEWORK = {
+    #'DEFAULT_AUTHENTICATION_CLASSES': (
+    #   'rest_framework_simplejwt.authentication.JWTAuthentication',
+    #),
+    # Comentado intencionalmente: nuestro sistema valida el token
+    # manualmente con decoradores propios (ver api/middlewares/auth_decorators.py),
+    # porque JWTAuthentication espera el modelo de usuarios nativos de Django.
+}
 
 ROOT_URLCONF = 'config.urls'
 
@@ -101,7 +122,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
+        'ENGINE': 'mysql.connector.django',  # backend que trae mysql-connector-python
         'NAME': 'mydb',
         'USER': 'root',
         'PASSWORD': 'admin',
@@ -146,3 +167,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),   # RNF: mismo tiempo que el cierre de sesión del frontend
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,  # reutiliza la SECRET_KEY que Django ya genera
+}
