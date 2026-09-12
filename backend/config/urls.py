@@ -27,4 +27,5 @@ urlpatterns = [
     path("api/", include("api.routes.cliente_routes")),
     path("api/", include("api.routes.modelo_routes")),
     path("api/", include("api.routes.historial_routes")),
+    path("api/", include("api.routes.factura_routes")),
 ]
