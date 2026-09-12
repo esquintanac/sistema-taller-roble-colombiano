@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from api.services.factura_service import FacturaService
+from api.middlewares.auth_decorators import requiere_rol
 
 MENSAJES_ERROR = {
     "modelo_no_encontrado": "El modelo indicado no existe.",
@@ -16,6 +17,7 @@ MENSAJES_ERROR = {
 }
 
 @api_view(["GET", "POST"])
+@requiere_rol("Administrador")
 def facturas_lista(request):
     if request.method == "GET":
         facturas = FacturaService.listar()
@@ -41,6 +43,7 @@ def facturas_lista(request):
     return Response(resultado, status=status.HTTP_201_CREATED)
 
 @api_view(["GET"])
+@requiere_rol("Administrador")
 def facturas_detalle(request, id_factura):
     factura = FacturaService.obtener(id_factura)
     if factura is None:

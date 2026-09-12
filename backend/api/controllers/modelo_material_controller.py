@@ -8,8 +8,10 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from api.services.modelo_material_service import ModeloMaterialService
+from api.middlewares.auth_decorators import requiere_rol
 
 @api_view(['GET', 'POST'])
+@requiere_rol("Administrador")
 def materiales_del_modelo(request, id_modelo):
     """
     GET /api/modelos/<id>/materiales/ -> lista materiales asociados
@@ -25,6 +27,7 @@ def materiales_del_modelo(request, id_modelo):
     return Response(resultado, status=status.HTTP_201_CREATED)
 
 @api_view(["POST"])
+@requiere_rol("Administrador")
 def materiales_melanina_automatica(request, id_modelo):
     """
     POST /api/modelos/<id>/materiales/melanina/

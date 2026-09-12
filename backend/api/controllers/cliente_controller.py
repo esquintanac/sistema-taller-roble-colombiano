@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from api.services.cliente_service import ClienteService
+from api.middlewares.auth_decorators import requiere_autenticacion
 
 
 def _cliente_a_dict(cliente):
@@ -24,10 +25,17 @@ def _cliente_a_dict(cliente):
 
 
 @api_view(["GET", "POST"])
+@requiere_autenticacion
 def clientes_lista(request):
     if request.method == "GET":
         clientes = ClienteService.listar()
         return Response([_cliente_a_dict(c) for c in clientes], status=status.HTTP_200_OK)
+
+    if request.usuario_actual["rol"] != "Administrador":
+            return Response(
+                {"exito": False, "mensaje": "No tienes permiso para realizar esta accion."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
     errores = ClienteService.validar_datos(request.data)
     if errores:
@@ -38,6 +46,7 @@ def clientes_lista(request):
 
 
 @api_view(["GET", "PUT", "DELETE"])
+@requiere_autenticacion
 def clientes_detalle(request, id_cliente):
     cliente = ClienteService.obtener(id_cliente)
     if cliente is None:
@@ -48,6 +57,13 @@ def clientes_detalle(request, id_cliente):
 
     if request.method == "GET":
         return Response(_cliente_a_dict(cliente), status=status.HTTP_200_OK)
+
+    # PUT y DELETE requieren rol Administrador
+    if request.usuario_actual["rol"] != "Administrador":
+        return Response(
+            {"exito": False, "mensaje": "No tienes permiso para realizar esta accion."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     if request.method == "PUT":
         errores = ClienteService.validar_datos(request.data, es_actualizacion=True)

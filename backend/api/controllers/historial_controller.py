@@ -8,9 +8,11 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from api.services.historial_service import HistorialService
+from api.middlewares.auth_decorators import requiere_rol
 
 
 @api_view(["GET"])
+@requiere_rol("Administrador")
 def historial_lista(request):
     """GET /api/historial/ — lista completa, enriquecida con JOIN."""
     registros = HistorialService.listar()
@@ -18,6 +20,7 @@ def historial_lista(request):
 
 
 @api_view(["GET"])
+@requiere_rol("Administrador")
 def historial_detalle(request, id_historial):
     """GET /api/historial/<id>/ — detalle de un registro."""
     registro = HistorialService.obtener(id_historial)

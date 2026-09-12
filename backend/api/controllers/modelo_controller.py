@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from api.services.modelo_service import ModeloService
+from api.middlewares.auth_decorators import requiere_autenticacion ,requiere_rol
 
 
 def _modelo_a_dict(modelo):
@@ -34,6 +35,7 @@ def _modelo_a_dict(modelo):
 
 
 @api_view(["GET", "POST"])
+@requiere_rol("Carpintero")
 def modelos_lista(request):
     if request.method == "GET":
         id_carpintero = request.query_params.get("id_carpintero")
@@ -54,6 +56,7 @@ def modelos_lista(request):
 
 
 @api_view(["GET", "PUT", "DELETE"])
+@requiere_autenticacion
 def modelos_detalle(request, id_modelo):
     modelo = ModeloService.obtener(id_modelo)
     if modelo is None:

@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from api.services.material_service import MaterialService
+from api.middlewares.auth_decorators import requiere_autenticacion
 
 
 def _material_a_dict(material):
@@ -25,6 +26,7 @@ def _material_a_dict(material):
 
 
 @api_view(["GET", "POST"])
+@requiere_autenticacion
 def materiales_lista(request):
     """
     GET  /api/materiales/  -> lista todos los materiales
@@ -33,6 +35,14 @@ def materiales_lista(request):
     if request.method == "GET":
         materiales = MaterialService.listar()
         return Response([_material_a_dict(m) for m in materiales], status=status.HTTP_200_OK)
+
+    # Dentro del mismo POST, verificamos el rol manualmente porque
+    # esta vista mezcla GET (cualquier rol) y POST (solo admin)
+    if request.usuario_actual["rol"] != "Administrador":
+        return Response(
+            {"exito": False, "mensaje": "No tienes permiso para realizar esta accion."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     # POST
     errores = MaterialService.validar_datos(request.data)
@@ -44,6 +54,7 @@ def materiales_lista(request):
 
 
 @api_view(["GET", "PUT", "DELETE"])
+@requiere_autenticacion
 def materiales_detalle(request, id_material):
     """
     GET    /api/materiales/<id>/  -> consulta un material
@@ -59,6 +70,13 @@ def materiales_detalle(request, id_material):
 
     if request.method == "GET":
         return Response(_material_a_dict(material), status=status.HTTP_200_OK)
+
+    # PUT y DELETE requieren rol Administrador
+    if request.usuario_actual["rol"] != "Administrador":
+        return Response(
+            {"exito": False, "mensaje": "No tienes permiso para realizar esta accion."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     if request.method == "PUT":
         errores = MaterialService.validar_datos(request.data, es_actualizacion=True)
