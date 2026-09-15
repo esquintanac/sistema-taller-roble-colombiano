@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        @page { size: A4; margin: 2cm; }
+        body { font-family: 'DejaVu Sans', sans-serif; color: #142624; }
+        h1 { color: #A65233; font-size: 20px; margin-bottom: 4px; }
+        .subtitulo { color: #5A4030; font-size: 12px; margin-bottom: 20px; }
+        .seccion-titulo { color: #142624; font-size: 15px; margin-top: 20px; border-bottom: 2px solid #E4D0BA; padding-bottom: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: #F5EDE0; text-align: left; padding: 6px 10px; font-size: 11px; }
+        td { padding: 6px 10px; border-bottom: 1px solid #E4D0BA; font-size: 11px; }
+        .info-box { background: #F5EDE0; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>Taller del Roble Colombiano</h1>
+    <p class="subtitulo">Reporte de construccion -- Modelo #{{ modelo.id_modelo }}</p>
+
+    <div class="info-box">
+        <strong>{{ modelo.nombre_modelo }}</strong> -- {{ modelo.alto }} x {{ modelo.ancho }} x {{ modelo.largo }} cm<br>
+        Cliente: {{ modelo.cliente }} · Carpintero: {{ modelo.carpintero }}
+    </div>
+
+    <p class="seccion-titulo">Piezas a cortar</p>
+    <table>
+        <thead><tr><th>Pieza</th><th>Ancho</th><th>Largo</th></tr></thead>
+        <tbody>
+            {% for pieza in piezas %}
+                <tr><td>{{ pieza.nombre }}</td><td>{{ pieza.ancho }}</td><td>{{ pieza.alto }} cm</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p class="seccion-titulo">Materiales necesarios</p>
+    <div class="info-box">
+        Melanina: <strong>{{ melanina.laminas_necesarias }} láminas</strong>
+        (lámina estandar {{ melanina.lamina_estandar }})
+    </div>
+</body>
+</html>
