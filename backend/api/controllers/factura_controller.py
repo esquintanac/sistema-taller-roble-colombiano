@@ -10,6 +10,9 @@ from rest_framework import status
 from api.services.factura_service import FacturaService
 from api.middlewares.auth_decorators import requiere_rol
 
+from django.http import HttpResponse
+from api.services.pdf_service import PDFService
+
 MENSAJES_ERROR = {
     "modelo_no_encontrado": "El modelo indicado no existe.",
     "sin_materiales": "El modelo no tiene materiales asociados. Asocia al menos uno antes de generar la factura.",
@@ -52,3 +55,17 @@ def facturas_detalle(request, id_factura):
             status=status.HTTP_404_NOT_FOUND
         )
     return Response(factura, status=status.HTTP_200_OK)
+
+@api_view(["GET"])
+@requiere_rol("Administrador")
+def facturas_descargar_pdf(request, id_factura):
+    """GET /api/facturas/<id>/pdf/ -- descargar el reporte de costos."""
+    factura = FacturaService.obtener(id_factura)
+    if factura is None:
+        return Response({"exito": False, "mensaje": "Factura no encontrada."}, status=status.HTTP_404_NOT_FOUND)
+
+    pdf_bytes = PDFService.generar_reporte_admin(factura)
+
+    respuesta = HttpResponse(pdf_bytes, content_type="application/pdf")
+    respuesta["Content-Disposition"] = f'attachment; filename="reporte_factura_{id_factura}.pdf"'
+    return respuesta    

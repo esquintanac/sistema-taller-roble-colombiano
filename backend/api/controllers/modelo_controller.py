@@ -10,6 +10,9 @@ from rest_framework import status
 from api.services.modelo_service import ModeloService
 from api.middlewares.auth_decorators import requiere_autenticacion ,requiere_rol
 
+from django.http import HttpResponse
+from api.services.pdf_service import PDFService
+
 
 def _modelo_a_dict(modelo):
     return {
@@ -89,7 +92,7 @@ def modelos_calcular_diseno(request, id_modelo):
     GET /api/modelos/<id>/diseno/
     Retorna las piezas a cortar y la melanina necesaria para un
     modelo ya guardado. Este endpoint es el que usará el frontend
-    en la pantalla de Diseño 3D (Sección 3, Fase 4).
+    en la pantalla de Diseño 3D.
     """
     resultado = ModeloService.calcular_diseno(id_modelo)
     if resultado is None:
@@ -98,3 +101,19 @@ def modelos_calcular_diseno(request, id_modelo):
             status=status.HTTP_404_NOT_FOUND,
         )
     return Response(resultado, status=status.HTTP_200_OK)
+
+@api_view(["GET"])
+@requiere_autenticacion
+def modelos_descargar_pdf(request, id_modelo):
+    """GET /api/modelos/<id>/pdf/ -- descarga el reporte de construccion."""
+    resultado = ModeloService.calcular_diseno(id_modelo)
+    modelo = ModeloService.obtener(id_modelo)
+    if resultado is None or modelo is None:
+        return Response({"exito": False, "mensaje": "Modelo no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+    modelo_dict = _modelo_a_dict(modelo)
+    pdf_bytes = PDFService.generar_reporte_carpintero(modelo_dict, resultado["piezas"], resultado["melanina"])
+
+    respuesta = HttpResponse(pdf_bytes, content_type="application/pdf")
+    respuesta["Content-Disposition"] = f'attachment; filename="reporte_modelo_{id_modelo}.pdf"'
+    return respuesta

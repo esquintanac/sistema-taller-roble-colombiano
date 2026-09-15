@@ -10,6 +10,7 @@ urlpatterns = [
     # Facturas
     path("facturas/", factura_controller.facturas_lista, name="api-facturas-lista"),
     path("facturas/<int:id_factura>/", factura_controller.facturas_detalle, name="api-facturas-detalle"),
+    path("facturas/<int:id_factura>/pdf/", factura_controller.facturas_descargar_pdf, name="api-facturas-pdf"),
 
     # Relacion Modelo-Material (anidada bajo /modelos/ conceptualmente)
     path("modelos/<int:id_modelo>/materiales/", modelo_material_controller.materiales_del_modelo, name="api-modelo-materiales"),
