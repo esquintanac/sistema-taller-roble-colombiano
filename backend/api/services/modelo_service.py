@@ -4,10 +4,10 @@ del cálculo de piezas y melanina.
 Ruta: backend/api/services/modelo_service.py
 """
 
+from src.dao.historial_dao import HistorialDAO
 from src.dao.modelo_dao import ModeloDAO
 from src.models.modelo import Modelo
 from api.services.calculadora_service import CalculadoraService
-from src.dao.historial_dao import HistorialDAO
 
 
 class ModeloService:
@@ -52,7 +52,6 @@ class ModeloService:
 
     @classmethod
     def crear(cls, datos):
-        # Calculamos las piezas ANTES de guardar, para almacenar el conteo
         piezas = CalculadoraService.calcular_piezas(datos)
 
         modelo = Modelo(
@@ -80,8 +79,8 @@ class ModeloService:
         id_nuevo = cls.dao.insertar_modelo(modelo)
         if id_nuevo is None:
             return None
-        return cls.dao.consultar_modelo_por_id(id_nuevo)
 
+        # NUEVO: crear automáticamente la entrada de historial
         cls.historial_dao.insertar_historial_automatico(
             id_modelo=id_nuevo,
             id_usuario=datos["id_carpintero"],

@@ -13,6 +13,9 @@ from api.middlewares.auth_decorators import requiere_autenticacion ,requiere_rol
 from django.http import HttpResponse
 from api.services.pdf_service import PDFService
 
+from src.dao.cliente_dao import ClienteDAO
+from src.config.conexion import Conexion
+
 
 def _modelo_a_dict(modelo):
     return {
@@ -105,15 +108,48 @@ def modelos_calcular_diseno(request, id_modelo):
 @api_view(["GET"])
 @requiere_autenticacion
 def modelos_descargar_pdf(request, id_modelo):
-    """GET /api/modelos/<id>/pdf/ -- descarga el reporte de construccion."""
+    """GET /api/modelos/<id>/pdf/ — descarga el reporte de construcción."""
     resultado = ModeloService.calcular_diseno(id_modelo)
     modelo = ModeloService.obtener(id_modelo)
     if resultado is None or modelo is None:
         return Response({"exito": False, "mensaje": "Modelo no encontrado."}, status=status.HTTP_404_NOT_FOUND)
 
     modelo_dict = _modelo_a_dict(modelo)
+
+    # Resolver nombre del cliente
+    cliente = ClienteDAO().consultar_cliente_por_id(modelo.id_cliente)
+    modelo_dict["cliente"] = f"{cliente.nombre} {cliente.apellido}" if cliente else "Cliente no encontrado"
+
+    # Resolver nombre del carpintero (consulta directa, no hay un
+    # UsuarioDAO propio todavia, asi que se hace en linea)
+    modelo_dict["carpintero"] = _obtener_nombre_usuario(modelo.id_carpintero)
+
     pdf_bytes = PDFService.generar_reporte_carpintero(modelo_dict, resultado["piezas"], resultado["melanina"])
 
     respuesta = HttpResponse(pdf_bytes, content_type="application/pdf")
     respuesta["Content-Disposition"] = f'attachment; filename="reporte_modelo_{id_modelo}.pdf"'
     return respuesta
+
+
+def _obtener_nombre_usuario(id_usuario):
+    """
+    Consulta el nombre completo de un usuario (carpintero) por su ID.
+    Nota: se hace en linea porque el proyecto aun no tiene un
+    UsuarioDAO dedicado; si en el futuro se crea uno (por ejemplo
+    para el modulo de gestion de usuarios del administrador), esta
+    funcion deberia reemplazarse por una llamada a ese DAO.
+    """
+    conexion = Conexion.obtener_conexion()
+    if conexion is None:
+        return "Carpintero no encontrado"
+    try:
+        cursor = conexion.cursor()
+        cursor.execute(
+            "SELECT Nombre, Apellido FROM Usuario WHERE id_usuario = %s",
+            (id_usuario,)
+        )
+        fila = cursor.fetchone()
+        return f"{fila[0]} {fila[1]}" if fila else "Carpintero no encontrado"
+    finally:
+        cursor.close()
+        Conexion.cerrar_conexion(conexion)

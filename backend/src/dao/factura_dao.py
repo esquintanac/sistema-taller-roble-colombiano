@@ -38,7 +38,7 @@ class FacturaDAO:
         try:
             cursor = conexion.cursor()
             sql = """
-            INSERT INTO detalle_factura
+            INSERT INTO detallefactura
             (id_factura, id_material, Cantidad, Precio_unitario, Subtotal)
             VALUES (%s, %s, %s, %s, %s)
             """
@@ -114,7 +114,7 @@ class FacturaDAO:
                 """
                 SELECT d.id_detalle, d.id_material, d.Cantidad, d.Precio_unitario,
                 d.Subtotal, m.Nombre_material
-                FROM DetalleFactura d
+                FROM detalleFactura d
                 INNER JOIN Material m ON d.id_material = m.id_material
                 WHERE d.id_factura = %s
                 """, (id_factura,)
