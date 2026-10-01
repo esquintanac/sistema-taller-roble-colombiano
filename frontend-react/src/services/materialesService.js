@@ -17,7 +17,7 @@ const materialesService = {
     },
 
     obtenerPorId: async (id) => {
-        const respuesta = await api.get("/materiales/${id}/");
+        const respuesta = await api.get(`/materiales/${id}/`);
         return respuesta.data;
     },
 
@@ -27,12 +27,13 @@ const materialesService = {
     },
 
     actualizar: async (id, material) => {
-        const respuesta = await api.put("/materiales/${id}/", material);
+        const respuesta = await api.put(`/materiales/${id}/`, material);
         return respuesta.data;
     },
 
     eliminar: async (id) => {
-        const respuesta = await api.delete("/materiales/${id}/")
+        const respuesta = await api.delete(`/materiales/${id}/`);
+        return respuesta.data;
     },
 };
 
