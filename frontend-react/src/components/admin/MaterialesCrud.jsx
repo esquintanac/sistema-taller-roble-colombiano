@@ -3,7 +3,7 @@
 // en las evidencias AA2-EV01/EV02 y AA3-EV01). Usa DataTable + axios
 // para las 4 operaciones sobre la base de datos MySQL.
 
-import { useState, useEffect, useEffectEvent } from "react";
+import { useState, useEffect } from "react";
 import materialesService from "../../services/materialesService";
 import DataTable from "../ui/DataTable";
 import FormField from "../ui/FormField";
@@ -16,12 +16,16 @@ const MATERIAL_VACIO = {
     costo_unitario: "", stock: "", stock_minimo: "",
 };
 
+// Formato de pesos, igual al que usa AdminDesignDetailPage para que el
+// costo se vea consistente en todo el sistema: 85000 -> $85.000
+const pesos = (valor) => `$${Number(valor || 0).toLocaleString("es-CO")}`;
+
 const COLUMNAS = [
     { key: "id_material", label: "ID" },
     { key: "nombre_material", label: "Nombre" },
     { key: "tipo_material", label: "Tipo" },
     { key: "unidad_medida", label: "Unidad" },
-    { key: "costo_unitario", label: "Costo", render: (m) => '$${m.costo_unitario}' },
+    { key: "costo_unitario", label: "Costo", render: (m) => pesos(m.costo_unitario) },
     { key: "stock", label: "Stock" },
 ]
 
@@ -41,7 +45,7 @@ export default function MaterialesCrud() {
             setCargando(true);
             const datos = await materialesService.listar();
             setMateriales(datos);
-        } catch (error) {
+        } catch {
             setMensaje({ tipo: "error", texto: "No se pudo conectar con el servidor. Verifica que el backend este corriendo." });
         } finally {
             setCargando(false);
@@ -65,7 +69,7 @@ export default function MaterialesCrud() {
             setFormulario(MATERIAL_VACIO);
             setIdEditando(null);
             cargarMateriales();
-        } catch (error) {
+        } catch {
             setMensaje({ tipo: "error", texto: "Ocurrio un error al guardar el material." });
         }
     }
@@ -81,7 +85,7 @@ export default function MaterialesCrud() {
             await materialesService.eliminar(id);
             setMensaje({ tipo: "success", texto: "Material eliminado correctamente." });
             cargarMateriales();
-        } catch (error) {
+        } catch {
             setMensaje({ tipo: "error", texto: "No se pudo eliminar el material." });
         }
     }
@@ -106,7 +110,7 @@ export default function MaterialesCrud() {
                         {idEditando ? "Guardar cambios" : "Registrar material"}
                     </Button>
                     {idEditando && (
-                        <Button variante="secondary" onClick={() => { setFormulario(MATERIAL_VACIO), setIdEditando(null); }}>
+                        <Button variante="secondary" onClick={() => { setFormulario(MATERIAL_VACIO); setIdEditando(null); }}>
                             Cancelar edición
                         </Button>
                     )}
