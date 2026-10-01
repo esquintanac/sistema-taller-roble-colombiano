@@ -15,7 +15,7 @@ export default function FormField ({
     as = "input", // "input" | "select" | "textarea"
     opciones = [], // usado cuando as === "select"
 }) {
-    const claseInput = 'form-control ${error ? "is-error" : ""}';
+    const claseInput = `form-control ${error ? "is-error" : ""}`;
 
     return (
         <div className="form-group">

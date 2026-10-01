@@ -4,5 +4,5 @@
 
 export default function StatusBadge({ estado }) {
     const clase = estado === "Nuevo" ? "badge-new" : "badge-done";
-    return <span className={'badge ${clase}'}>{estado}</span>;
+    return <span className={`badge ${clase}`}>{estado}</span>;
 }

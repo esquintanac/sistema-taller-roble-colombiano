@@ -12,12 +12,12 @@ export default function Stepper({ pasoActual }) {
                 const estado = numero < pasoActual ? "done" : numero === pasoActual ? "active": "";
                 return (
                     <div key={etiqueta} style={{ display: "flex", alignItems: "center", flex: numero < PASOS.length ? 1 : "none" }}>
-                        <div className={'step ${estado}'} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <div className={`step ${estado}`} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <div className="step-num">{estado === "done" ? "✓": numero}</div>
                             <span style={{ fontSize: 13 }}>{etiqueta}</span>
                         </div>
                         {numero < PASOS.length && (
-                            <div className={'step-line ${numero < pasoActual ? "done": ""}'}></div>
+                            <div className={`step-line ${numero < pasoActual ? "done" : ""}`}></div>
                         )}
                     </div>
                 );
