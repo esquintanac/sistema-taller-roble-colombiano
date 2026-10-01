@@ -4,18 +4,22 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import authService from "../../services/authService";
 import FormField from "../ui/FormField";
 import Button from "../ui/Button";
+import Alert from "../ui/Alert";
 import RoleSelector from "./RoleSelector";
 
 const CAMPOS_INICIALES = {
     nombre: "", apellidos: "", telefono: "", correo: "", usuario: "", contrasena: "",
 };
 
-export default function RegistrerForm() {
+export default function RegisterForm() {
     const [valores, setValores] = useState(CAMPOS_INICIALES);
     const [rol, setRol] = useState("Carpintero");
     const [errores, setErrores] = useState({});
+    const [erroresServidor, setErroresServidor] = useState([]);
+    const [cargando, setCargando] = useState(false);
     const navigate = useNavigate();
 
     function handleChange(e) {
@@ -31,14 +35,32 @@ export default function RegistrerForm() {
         return Object.keys(nuevosErrores).length === 0;
     }
 
-    function handleSubmit(e) {
+    async function handleSubmit(e) {
         e.preventDefault();
+        setErroresServidor([]);
         if (!validar()) return;
-        navigate("/verificacion");
+
+        setCargando(true);
+        try {
+            await authService.registrar({ ...valores, rol });
+            // Registro exitoso -> al login para autenticarse con JWT.
+            navigate("/login");
+        } catch (error) {
+            const data = error?.response?.data;
+            // El backend devuelve { errores: [...] } en fallos de validacion.
+            const lista = data?.errores || [data?.mensaje || "No se pudo completar el registro."];
+            setErroresServidor(lista);
+        } finally {
+            setCargando(false);
+        }
     }
 
     return (
     <form onSubmit={handleSubmit} noValidate>
+      {erroresServidor.length > 0 && (
+        <Alert tipo="error" mensaje={erroresServidor.join(" ")} />
+      )}
+
       <FormField label="Nombre" name="nombre" value={valores.nombre} onChange={handleChange} error={errores.nombre} requerido />
       <FormField label="Apellidos" name="apellidos" value={valores.apellidos} onChange={handleChange} error={errores.apellidos} requerido />
       <FormField label="Número telefónico" name="telefono" tipo="tel" value={valores.telefono} onChange={handleChange} error={errores.telefono} requerido />
@@ -52,7 +74,7 @@ export default function RegistrerForm() {
       </div>
 
       <Button tipo="submit" variante="primary" tamano="lg" fullWidth>
-        Registrarse
+        {cargando ? "Registrando…" : "Registrarse"}
       </Button>
     </form>
   );

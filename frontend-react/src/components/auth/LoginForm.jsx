@@ -5,20 +5,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import authService from "../../services/authService";
 import FormField from "../ui/FormField";
 import Button from "../ui/Button";
 import Alert from "../ui/Alert";
-
-const USUARIOS_PRUEBA = [
-  { usuario: "carpintero01", contrasena: "1234", nombre: "Juan Pérez", rol: "Carpintero" },
-  { usuario: "admin01", contrasena: "1234", nombre: "Eric Quintana", rol: "Administrador" },
-];
 
 export default function LoginForm() {
   const [valores, setValores] = useState({ usuario: "", contrasena: "" });
   const [errores, setErrores] = useState({});
   const [errorGlobal, setErrorGlobal] = useState("");
-  const { iniciarSesion } = useAuth();
+  const [cargando, setCargando] = useState(false);
+  const { iniciarVerificacion } = useAuth();
   const navigate = useNavigate();
 
   function handleChange(e) {
@@ -33,22 +30,26 @@ export default function LoginForm() {
     return Object.keys(nuevosErrores).length === 0;
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setErrorGlobal("");
     if (!validar()) return;
 
-    const encontrado = USUARIOS_PRUEBA.find(
-      (u) => u.usuario === valores.usuario && u.contrasena === valores.contrasena
-    );
-
-    if (!encontrado) {
-      setErrorGlobal("Usuario o contraseña incorrectos. Verifica tus datos e inténtalo de nuevo.");
-      return;
+    setCargando(true);
+    try {
+      await authService.login(valores.usuario, valores.contrasena);
+      // Las credenciales son correctas, pero la sesión todavía NO se
+      // activa: queda pendiente del código SMS (segundo factor, RNF).
+      iniciarVerificacion();
+      navigate("/verificacion");
+    } catch (error) {
+      const mensaje =
+        error?.response?.data?.mensaje ||
+        "Usuario o contraseña incorrectos. Verifica tus datos e inténtalo de nuevo.";
+      setErrorGlobal(mensaje);
+    } finally {
+      setCargando(false);
     }
-
-    iniciarSesion(encontrado);
-    navigate("/verificacion");
   }
 
   return (
@@ -77,7 +78,7 @@ export default function LoginForm() {
       />
 
       <Button tipo="submit" variante="primary" tamano="lg" fullWidth>
-        Iniciar sesión
+        {cargando ? "Ingresando…" : "Iniciar sesión"}
       </Button>
     </form>
   );
