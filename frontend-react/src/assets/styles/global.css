@@ -44,7 +44,12 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; color: var(--seminegro); }
 .btn-danger { background: transparent; color: var(--error); border-color: #c84040; }
 .btn-success { background: var(--success); color: #fff; }
 .btn-lg { padding: 14px 28px; font-size: 15px; }
+
+/* Boton compacto. Faltaba en el CSS: Viewer3D y MaterialesCrud ya usaban
+   btn-sm, pero al no existir tomaban el tamano por defecto de .btn. */
+.btn-sm { padding: 7px 14px; font-size: 13px; }
 .btn-full { width: 100%; }
+.btn-sm { padding: 7px 14px; font-size: 13px; }
 
 .form-group { margin-bottom: 16px; }
 .form-label { display: block; font-size: 13px; font-weight: 700; color: var(--tx-sec); margin-bottom: 6px; }
@@ -57,6 +62,25 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; color: var(--seminegro); }
 .field-hint { font-size: 11px; color: var(--tx-muted); margin-top: 4px; display: block; }
 
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 24px; }
+
+/* Panel del Taller: rejilla de tarjetas de acciones (HomePage) */
+.grid-acciones {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    margin-top: 8px;
+}
+.card-accion {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.card-accion:hover {
+    border-color: var(--marron-cla);
+    transform: translateY(-3px);
+    box-shadow: 0 4px 14px rgba(166, 82, 51, .10);
+}
 
 .alert { display: flex; gap: 10px; padding: 12px 14px; border-radius: var(--r-md); margin-bottom: 16px; }
 .alert-error { background: var(--error-bg); border-left: 3px solid var(--error); }
@@ -92,6 +116,53 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; color: var(--seminegro); }
 .step.done .step-num { background: var(--success); border-color: var(--success); color: #fff; }
 .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 4px; }
 .step-line.done { background: var(--success); }
+
+/* ===== Reportes del carpintero: dos tarjetas lado a lado ===== */
+.grid-reportes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.reporte-item {
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--bg-alt);
+  padding: 18px;
+}
+
+/* ===== Visor 3D: título arriba, lienzo al centro, controles abajo ===== */
+/* Contenedor en columna: es el que ordena los tres bloques. */
+.visor {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
+.visor-titulo {
+  font-size: 15px;
+  margin: 0 0 10px;
+}
+
+/* Caja del lienzo. Ya NO reparte a sus hijos en fila: el Canvas de React
+   Three Fiber necesita todo el ancho y alto por sí solo, y con
+   display:flex terminaba compartiendo la fila con los botones. */
+.visor-wrap {
+  background: var(--bg-alt);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-lg);
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Botones debajo del lienzo, centrados respecto al ancho del visor. */
+.visor-ctrl {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
 
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 thead th { text-align: left; padding: 11px 14px; background: var(--bg-alt); border-bottom: 2px solid var(--border); }

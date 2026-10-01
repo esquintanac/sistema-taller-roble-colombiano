@@ -21,13 +21,16 @@ export default function Header() {
   const paginasConBoton = [
     "/formulario-datos",
     "/validar-datos",
-    "/disenio-3d",
+    "/diseno-3d",
     "/reporte",
     "/historial",
     "/materiales",
   ];
 
   const mostrarBoton = paginasConBoton.includes(location.pathname) || location.pathname.startsWith("/detalle-admin/");
+
+  // No mostrar el acceso al panel cuando ya estamos en el panel.
+  const mostrarInicio = location.pathname !== "/inicio";
 
   function handleLogout() {
     cerrarSesion();
@@ -67,6 +70,15 @@ export default function Header() {
             {usuario.rol}
           </span>
 
+          {mostrarInicio && (
+            <button
+              onClick={() => navigate("/inicio")}
+              style={{ padding: "8px 16px", background: "var(--marron-cla)", color: "var(--tx-main)", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: 700 }}
+            >
+              Inicio
+            </button>
+          )}
+
           {mostrarBoton && (
             <button 
             onClick={() => navigate(usuario.rol === "Administrador" ? "/tutorial-admin" : "/tutorial")}
@@ -84,6 +96,12 @@ export default function Header() {
                 borderRadius: 8, boxShadow: "0 4px 14px rgba(0,0,0,.15)", zIndex: 200,
               }}
             >
+              <button
+                onClick={() => { setMenuAbierto(false); navigate("/inicio"); }}
+                style={{ display: "block", width: "100%", padding: "10px 14px", textAlign: "left", background: "none", border: "none", borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+              >
+                Panel del taller
+              </button>
               <button
                 onClick={handleLogout}
                 style={{ display: "block", width: "100%", padding: "10px 14px", textAlign: "left", background: "none", border: "none", cursor: "pointer" }}

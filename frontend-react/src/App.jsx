@@ -18,6 +18,7 @@ import HistoryPage from "./pages/HistoryPage";
 import AdminDesignDetailPage from "./pages/AdminDesignDetailPage";
 import MaterialesPage from "./pages/MaterialesPage";
 import SessionExpiredPage from "./pages/SessionExpiredPage";
+import HomePage from "./pages/HomePage";
 
 import "./assets/styles/global.css";
 
@@ -34,6 +35,15 @@ export default function App() {
               <Route path="/registro" element={<RegisterPage />} />
               <Route path="/verificacion" element={<VerificationPage />} />
               <Route path="/sesion-expirada" element={<SessionExpiredPage />} />
+
+              <Route
+                path="/inicio"
+                element={
+                  <ProtectedRoute>
+                    <HomePage />
+                  </ProtectedRoute>
+                }
+              />
 
               <Route
                 path="/tutorial"
@@ -69,7 +79,7 @@ export default function App() {
                 }
               />
               <Route
-                path="/disenio-3d"
+                path="/diseno-3d"
                 element={
                   <ProtectedRoute rolRequerido="Carpintero">
                     <Design3DPage />
