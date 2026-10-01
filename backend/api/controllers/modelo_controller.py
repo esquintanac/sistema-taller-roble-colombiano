@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from api.services.modelo_service import ModeloService
+from api.services.modelo_material_service import ModeloMaterialService
 from api.middlewares.auth_decorators import requiere_autenticacion ,requiere_rol
 
 from django.http import HttpResponse
@@ -90,6 +91,7 @@ def modelos_detalle(request, id_modelo):
 
 
 @api_view(["GET"])
+@requiere_autenticacion
 def modelos_calcular_diseno(request, id_modelo):
     """
     GET /api/modelos/<id>/diseno/
@@ -128,6 +130,41 @@ def modelos_descargar_pdf(request, id_modelo):
 
     respuesta = HttpResponse(pdf_bytes, content_type="application/pdf")
     respuesta["Content-Disposition"] = f'attachment; filename="reporte_modelo_{id_modelo}.pdf"'
+    return respuesta
+
+
+@api_view(["GET"])
+@requiere_autenticacion
+def modelos_descargar_pdf_materiales(request, id_modelo):
+    """
+    GET /api/modelos/<id>/pdf/materiales/
+    Reporte de materiales y costos del mueble: qué materiales lleva
+    (tabla modelo_material), cuánto de cada uno y cuánto cuesta, con el
+    total al pie. Es un documento distinto del reporte de construcción,
+    que lista las piezas a cortar.
+    """
+    modelo = ModeloService.obtener(id_modelo)
+    if modelo is None:
+        return Response(
+            {"exito": False, "mensaje": f"No existe un modelo con ID {id_modelo}."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    modelo_dict = _modelo_a_dict(modelo)
+
+    cliente = ClienteDAO().consultar_cliente_por_id(modelo.id_cliente)
+    modelo_dict["cliente"] = f"{cliente.nombre} {cliente.apellido}" if cliente else "Cliente no encontrado"
+    modelo_dict["carpintero"] = _obtener_nombre_usuario(modelo.id_carpintero)
+
+    # Materiales realmente asociados al modelo. Si todavía no se le
+    # asoció ninguno, la lista viene vacía y la plantilla lo informa en
+    # lugar de imprimir una tabla sin filas.
+    materiales = ModeloMaterialService.listar_por_modelo(id_modelo)
+
+    pdf_bytes = PDFService.generar_reporte_materiales(modelo_dict, materiales)
+
+    respuesta = HttpResponse(pdf_bytes, content_type="application/pdf")
+    respuesta["Content-Disposition"] = f'attachment; filename="materiales_modelo_{id_modelo}.pdf"'
     return respuesta
 
 

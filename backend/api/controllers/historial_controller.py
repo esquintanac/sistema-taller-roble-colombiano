@@ -33,6 +33,7 @@ def historial_detalle(request, id_historial):
 
 
 @api_view(["PUT"])
+@requiere_rol("Administrador")
 def historial_marcar_revisado(request, id_historial):
     """
     PUT /api/historial/<id>/revisar/

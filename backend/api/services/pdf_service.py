@@ -23,3 +23,24 @@ class PDFService:
             "factura": factura_dict,
         })
         return HTML(string=html_renderizado).write_pdf()
+
+    @staticmethod
+    def generar_reporte_materiales(modelo_dict, materiales) -> bytes:
+        """
+        Genera el PDF de materiales y costos de un modelo (RF5).
+
+        Los materiales vienen de modelo_material, así que traen el
+        costo_utilizado que quedó CONGELADO al asociarlos: el reporte
+        refleja el costo real del mueble, no el precio actual del
+        inventario.
+        """
+        # El total se suma aquí y no en la plantilla: en el HTML sería
+        # una suma fila por fila que no puede formatearse como moneda.
+        total = sum(float(m.get("costo_utilizado") or 0) for m in materiales)
+
+        html_renderizado = render_to_string("pdf/reporte_materiales.html", {
+            "modelo": modelo_dict,
+            "materiales": materiales,
+            "total": total,
+        })
+        return HTML(string=html_renderizado).write_pdf()

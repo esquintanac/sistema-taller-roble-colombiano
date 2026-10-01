@@ -73,7 +73,7 @@ class MaterialDAO:
     def insertar_material(self, material: Material) -> bool:
         conexion = Conexion.obtener_conexion()
         if conexion is None:
-            return false
+            return False
         try:
             cursor = conexion.cursor()
             sql = """
@@ -114,7 +114,7 @@ class MaterialDAO:
             cursor.execute(sql, valores)
             conexion.commit()
             if cursor.rowcount == 0:
-                print(f"No se actualizó ningun registro. Verifica el ID: {id_material}")
+                print(f"No se actualizó ningun registro. Verifica el ID: {material.id_material}")
                 return False
             print(f"Material #{material.id_material} actualizado correctamente.")
             return True

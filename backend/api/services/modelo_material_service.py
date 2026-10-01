@@ -30,7 +30,7 @@ class ModeloMaterialService:
             errores.append("La cantidad debe ser un número válido.")
 
         if errores:
-            return {"errores", errores}
+            return {"errores": errores}
 
         resultado = cls.dao.asociar_material(
             id_modelo=id_modelo,
@@ -42,7 +42,7 @@ class ModeloMaterialService:
         if resultado is None:
             return {"errores": ["El material indicado no existe."]}
 
-        return {"exito", True}
+        return {"exito": True}
 
     @classmethod
     def asociar_melanina_automatica(cls, id_modelo, id_material_melanina):

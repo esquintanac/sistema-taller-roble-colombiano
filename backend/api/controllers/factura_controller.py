@@ -68,4 +68,4 @@ def facturas_descargar_pdf(request, id_factura):
 
     respuesta = HttpResponse(pdf_bytes, content_type="application/pdf")
     respuesta["Content-Disposition"] = f'attachment; filename="reporte_factura_{id_factura}.pdf"'
-    return respuesta    
+    return respuesta

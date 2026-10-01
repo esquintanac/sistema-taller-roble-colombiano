@@ -9,6 +9,7 @@ Ruta: backend/src/dao/modelo_material_dao.py
 from mysql.connector import Error
 from src.config.conexion import Conexion
 from src.dao.material_dao import MaterialDAO
+from decimal import Decimal
 
 class ModeloMaterialDAO:
     """CRUD sobre la tabla modelo_material."""
@@ -28,7 +29,10 @@ class ModeloMaterialDAO:
         if material is None:
             return None
 
-        costo_utilizado = round(cantidad * material.costo_unitario, 2)
+        cantidad_decimal = Decimal(str(cantidad))
+        costo_unitario_decimal = Decimal(str(material.costo_unitario))
+
+        costo_utilizado = round(cantidad_decimal * costo_unitario_decimal, 2)
 
         conexion = Conexion.obtener_conexion()
         if conexion is None:

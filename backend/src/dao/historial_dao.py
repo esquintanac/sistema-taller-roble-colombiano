@@ -5,7 +5,7 @@ Ruta: backend/src/dao/historial_dao.py
 A diferencia de los DAO anteriores (Material, Cliente), este NO
 tiene un metodo insertar_historial() de uso libre: los registros
 de historial se crean automaticamente desde ModeloService al crear
-un modelo reflejando que el historial es un efecto
+un modelo (ver Paso 4), reflejando que el historial es un efecto
 secundario de esa accion, no un recurso creado directamente por
 el usuario.
 """

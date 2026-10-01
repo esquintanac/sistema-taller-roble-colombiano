@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { size: A4; margin: 2cm; }
+        body { font-family: 'DejaVu Sans', sans-serif; color: #142624; }
+        h1 { color: #A65233; font-size: 20px; margin-bottom: 4px; }
+        .subtitulo { color: #5A4030; font-size: 12px; margin-bottom: 20px; }
+        .seccion-titulo { color: #142624; font-size: 15px; margin-top: 20px; border-bottom: 2px solid #E4D0BA; padding-bottom: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: #F5EDE0; text-align: left; padding: 6px 10px; font-size: 11px; }
+        td { padding: 6px 10px; border-bottom: 1px solid #E4D0BA; font-size: 11px; }
+        .info-box { background: #F5EDE0; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 12px; }
+        .numero { text-align: right; }
+        /* Fila del total: separada con una linea doble para que no se
+           confunda con un material mas de la lista. */
+        .total td { border-top: 2px solid #C9A882; border-bottom: none; font-weight: bold; font-size: 12px; padding-top: 9px; }
+        .aviso { color: #7A4F00; background: #FFF0CC; padding: 10px 14px; border-radius: 6px; font-size: 12px; }
+        .nota { color: #8E7260; font-size: 10px; margin-top: 14px; }
+    </style>
+</head>
+<body>
+    <h1>Taller del Roble Colombiano</h1>
+    <p class="subtitulo">Reporte de materiales y costos -- Modelo #{{ modelo.id_modelo }}</p>
+
+    <div class="info-box">
+        <strong>{{ modelo.nombre_modelo }}</strong> -- {{ modelo.alto }} x {{ modelo.ancho }} x {{ modelo.largo }} cm<br>
+        Cliente: {{ modelo.cliente }} · Carpintero: {{ modelo.carpintero }}
+    </div>
+
+    <p class="seccion-titulo">Materiales del modelo</p>
+
+    {% if materiales %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Material</th>
+                    <th class="numero">Cantidad</th>
+                    <th>Unidad</th>
+                    <th class="numero">Costo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in materiales %}
+                    <tr>
+                        <td>{{ m.nombre_material }}</td>
+                        <td class="numero">{{ m.cantidad }}</td>
+                        <td>{{ m.unidad_medida }}</td>
+                        <td class="numero">${{ m.costo_utilizado }}</td>
+                    </tr>
+                {% endfor %}
+                <tr class="total">
+                    <td colspan="3">Costo total de materiales</td>
+                    <td class="numero">${{ total }}</td>
+                </tr>
+            </tbody>
+        </table>
+    {% else %}
+        <p class="aviso">
+            Este modelo todavia no tiene materiales asociados, por eso no
+            hay costos que reportar. Asocia los materiales del mueble para
+            que este documento muestre el desglose y el total.
+        </p>
+    {% endif %}
+
+    <p class="nota">
+        Los costos corresponden al valor de los materiales en el momento en
+        que se asociaron al modelo, por lo que no cambian si el precio del
+        inventario sube o baja despues.
+    </p>
+</body>
+</html>
