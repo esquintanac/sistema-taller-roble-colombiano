@@ -19,7 +19,7 @@ export default function TutorialPage() {
     <div className="container" style={{ maxWidth: 680, paddingTop: 30, paddingBottom: 40 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
         <h1 style={{ margin: 0 }}>Bienvenido al sistema</h1>
-        <Button variante="secondary" tamano="sm" onClick={() => navigate("/formulario-datos")}>
+        <Button variante="secondary" tamano="sm" onClick={() => navigate("/inicio")}>
           Saltar tutorial
         </Button>
       </div>
@@ -37,9 +37,9 @@ export default function TutorialPage() {
         </Button>
         <Button
           variante="primary"
-          onClick={() => (paso < PASOS.length ? setPaso(paso + 1) : navigate("/formulario-datos"))}
+          onClick={() => (paso < PASOS.length ? setPaso(paso + 1) : navigate("/inicio"))}
         >
-          {paso < PASOS.length ? "Siguiente paso" : "Ir al sistema"}
+          {paso < PASOS.length ? "Siguiente paso" : "Ir al panel del taller"}
         </Button>
       </div>
     </div>
