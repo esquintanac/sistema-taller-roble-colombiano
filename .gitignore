@@ -1,0 +1,15 @@
+# Python / Django
+__pycache__/
+*.pyc
+.venv/
+
+# Node / Vite
+node_modules/
+dist/
+
+# Logs de servidores de desarrollo (runserver, etc.)
+*.log
+*.err
+
+# Variables locales (usar .env.example como plantilla)
+.env

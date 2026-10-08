@@ -1,0 +1,48 @@
+# docker-compose.yml
+# Orquesta los 3 servicios del sistema: base de datos, backend y
+# frontend, conectados entre sí en una misma red interna.
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: trc_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: mydb
+    ports:
+      - "3307:3306"  # <-- Cambiado de 3306 a 3307
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docs/base-datos/taller_roble_backup.sql:/docker-entrypoint-initdb.d/init.sql
+
+  backend:
+    build: ./backend
+    container_name: trc_backend
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_NAME: mydb
+      DB_USER: root
+      DB_PASSWORD: admin
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build: ./frontend-react
+    container_name: trc_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend-react:/app
+      - /app/node_modules
+
+volumes:
+  mysql_data:
