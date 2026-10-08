@@ -12,6 +12,7 @@ export default function FormField ({
     requerido = false,
     hint,
     placeholder,
+    maxLength,
     as = "input", // "input" | "select" | "textarea"
     opciones = [], // usado cuando as === "select"
 }) {
@@ -55,6 +56,7 @@ export default function FormField ({
                 value={value}
                 onChange={onChange}
                 placeholder={placeholder}
+                maxLength={maxLength}
                 />
             )}
 

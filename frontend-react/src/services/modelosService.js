@@ -40,8 +40,12 @@ export function construirPayload(datos, usuario) {
     color: datos.color || "",
     altura_barra_colgadora: datos.llevaBarra ? aNumero(datos.alturaBarra) : 0,
     tipo_puerta: datos.llevaPuertas ? datos.tipoPuerta || "" : "",
-    altura_zocalo: aNumero(datos.alturaZocalo),
-    material_fondo: datos.materialFondo || "",
+    // Zócalo y fondo trasero solo se registran si el usuario los activó.
+    // material_fondo es especialmente importante: la CalculadoraService
+    // del backend SOLO genera la pieza "Fondo trasero" cuando este campo
+    // llega con valor (ver calcular_piezas).
+    altura_zocalo: datos.llevaZocalo ? aNumero(datos.alturaZocalo) : 0,
+    material_fondo: datos.llevaFondo ? datos.materialFondo || "" : "",
   };
 }
 
