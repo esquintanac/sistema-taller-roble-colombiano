@@ -49,7 +49,6 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; color: var(--seminegro); }
    btn-sm, pero al no existir tomaban el tamano por defecto de .btn. */
 .btn-sm { padding: 7px 14px; font-size: 13px; }
 .btn-full { width: 100%; }
-.btn-sm { padding: 7px 14px; font-size: 13px; }
 
 .form-group { margin-bottom: 16px; }
 .form-label { display: block; font-size: 13px; font-weight: 700; color: var(--tx-sec); margin-bottom: 6px; }
@@ -102,13 +101,96 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; color: var(--seminegro); }
 .toggle input:checked ~ .toggle-track::before { transform: translateX(20px); }
 
 .site-header { background: var(--seminegro); padding: 0; position: sticky; top: 0; z-index: 100; }
-.site-header .container { display: flex; align-items: center; justify-content: space-between; height: 58px; }
+/* El contenedor lleva position:relative para que el menú desplegable del
+   avatar y el panel móvil se ubiquen respecto a esta barra, no a la página. */
+.site-header-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; position: relative; }
 .site-logo { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; color: var(--piel); }
 .site-logo span { color: var(--marron-cla); }
-.nav-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--marron-cla); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; cursor: pointer; }
+.nav-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--marron-cla); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; cursor: pointer; border: none; flex-shrink: 0; }
+.nav-avatar-lg { width: 44px; height: 44px; font-size: 16px; cursor: default; }
 .badge-rol { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
 .badge-carpintero { background: rgba(191,123,63,.22); color: var(--piel); }
 .badge-admin { background: rgba(166,82,51,.3); color: #f5c4b3; }
+
+/* Bloque de escritorio: identidad + accesos. En móvil se oculta entero y
+   queda solo el botón de menú. */
+.nav-escritorio { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+.nav-nombre { font-size: 13px; color: #d4c2b0; }
+
+/* Menú desplegable del avatar (escritorio) */
+.nav-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 190px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .15);
+  z-index: 200;
+  overflow: hidden;
+}
+.nav-menu-item {
+  display: block; width: 100%; padding: 11px 14px; text-align: left;
+  background: none; border: none; cursor: pointer; font-size: 14px;
+  color: var(--tx-main); font-family: inherit;
+}
+.nav-menu-item:hover { background: var(--bg-alt); }
+.nav-menu-item + .nav-menu-item { border-top: 1px solid var(--border); }
+.nav-menu-item-salir { color: var(--error); font-weight: 700; }
+
+/* Cabecera del menú de cuenta: muestra nombre y rol, para que el cierre de
+   sesión no aparezca como un elemento suelto sin contexto. */
+.nav-menu-cabecera { padding: 12px 14px; border-bottom: 1px solid var(--border); background: var(--bg-alt); }
+.nav-menu-nombre { font-weight: 700; font-size: 14px; }
+
+/* Variantes del badge de rol para FONDOS CLAROS.
+   Las clases base (.badge-carpintero / .badge-admin) usan el crema --piel,
+   pensado para leerse sobre la barra oscura del header. Puestas sobre el
+   panel móvil, que es blanco, ese texto quedaba prácticamente invisible.
+   Se corrigen aquí acotándolas al panel, con mayor especificidad, para no
+   tocar la versión de la cabecera. */
+.nav-panel .badge-carpintero { background: rgba(191, 123, 63, .20); color: #7A4A17; }
+.nav-panel .badge-admin { background: rgba(166, 82, 51, .15); color: #8A3F24; }
+
+/* Botón de menú: oculto en escritorio, visible en pantallas pequeñas. */
+.nav-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: 1px solid rgba(244, 234, 220, .35);
+  border-radius: var(--r-md);
+  color: var(--piel);
+  font-size: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Panel desplegable de navegación (móvil) */
+.nav-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .22);
+  padding: 14px;
+  z-index: 200;
+}
+.nav-panel-usuario { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.nav-panel-nombre { font-weight: 700; margin-bottom: 4px; }
+.nav-panel-item {
+  display: block; width: 100%; text-align: left; padding: 11px 12px;
+  background: none; border: none; border-radius: var(--r-md); cursor: pointer;
+  font-size: 14px; color: var(--tx-main); font-family: inherit;
+}
+.nav-panel-item:hover { background: var(--bg-alt); }
+.nav-panel-item-salir { color: var(--error); font-weight: 700; margin-top: 6px; border-top: 1px solid var(--border); border-radius: 0; padding-top: 14px; }
 
 .stepper { display: flex; align-items: center; margin-bottom: 28px; }
 .step-num { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; border: 2px solid var(--border-dk); background: var(--surface); color: var(--tx-muted); }
@@ -164,12 +246,23 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; color: var(--seminegro); }
   margin-top: 12px;
 }
 
+/* Contenedor de tablas: habilita el scroll horizontal en pantallas
+   angostas en vez de que la tabla desborde el layout. Lo usan DataTable
+   (historial y materiales) y la lista de piezas del detalle del admin. */
+.table-wrap { width: 100%; overflow-x: auto; }
+
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 thead th { text-align: left; padding: 11px 14px; background: var(--bg-alt); border-bottom: 2px solid var(--border); }
 tbody td { padding: 13px 14px; border-bottom: 1px solid var(--border); }
 .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
-.badge-new { background: var(--success-bg); color: var(--success); }
-.badge-done { background: var(--bg-alt); color: var(--tx-muted); }
+/* "Nuevo" está pendiente de revisión (ámbar); "Revisado" ya está resuelto
+   (verde). Antes estaba invertido: lo pendiente salía en verde. */
+.badge-new { background: var(--warning-bg); color: var(--warning); }
+.badge-done { background: var(--success-bg); color: var(--success); }
+
+/* Utilidad de espaciado que usa MaterialesCrud. Antes no existía, así que
+   el margen de la tarjeta del formulario simplemente no se aplicaba. */
+.mb-md { margin-bottom: 16px; }
 
 /* ===== FIX: layout de página completa con footer fijo al fondo ===== */
 html, body, #root {
@@ -196,4 +289,374 @@ html, body, #root {
 }
 .site-header .site-logo {
   margin-right: 24px;
+}
+
+/* ===== Ventana emergente de aviso de sesión por cerrarse ===== */
+/* El overlay cubre todo y oscurece el fondo. El z-index va muy por encima
+   del header (100) y de su menú desplegable (200) para que el aviso no
+   quede nunca por debajo de la interfaz. */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 38, 36, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.modal-aviso {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 28px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.28);
+}
+
+.modal-aviso-icono {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--warning-bg);
+  color: var(--warning);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  margin: 0 auto 14px;
+}
+
+.modal-aviso-titulo {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.modal-aviso-texto {
+  color: var(--tx-sec);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.modal-aviso-contador {
+  margin: 16px 0 20px;
+  font-size: 14px;
+  color: var(--tx-muted);
+}
+
+.modal-aviso-contador strong {
+  font-size: 20px;
+  color: var(--error);
+  letter-spacing: 1px;
+}
+
+.modal-aviso-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ============================================================
+   BLOQUE 3 — Retículas, estados de carga, foco e impresión
+   ============================================================ */
+
+/* ---- Foco visible ----
+   Sin esto no había ninguna señal de dónde estaba el cursor al navegar con
+   teclado. :focus-visible lo dibuja solo para navegación por teclado, así que
+   al usar el ratón no aparece el contorno. */
+:focus-visible { outline: 3px solid var(--marron-cla); outline-offset: 2px; border-radius: 4px; }
+:focus:not(:focus-visible) { outline: none; }
+
+/* ---- Estados hover y desactivado que faltaban ---- */
+.btn-secondary:hover { background: var(--bg-alt); }
+.btn-danger:hover { background: var(--error-bg); }
+.btn-success:hover { filter: brightness(.92); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn:disabled:hover { transform: none; }
+
+/* Botones sobre la barra oscura del header. Antes se pintaban con estilos en
+   línea (marrón claro con texto oscuro encima) y quedaban con poco contraste. */
+.btn-header { background: var(--marron-cla); color: #fff; border: 1.5px solid transparent; }
+.btn-header:hover { background: var(--marron-osc); }
+
+/* ---- Retículas reutilizables ----
+   Sustituyen a los `gridTemplateColumns` escritos en línea, que no podían
+   adaptarse a pantallas pequeñas porque viven en el estilo de cada elemento. */
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+
+/* Contenido principal + panel lateral fijo (Diseño 3D y detalle del
+   administrador). El panel pasa debajo en pantallas estrechas. */
+.layout-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* ---- Estados de carga ---- */
+.loading { display: flex; align-items: center; gap: 10px; color: var(--tx-sec); font-size: 14px; }
+.spinner {
+  width: 20px; height: 20px; flex-shrink: 0;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: girar .8s linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+
+/* Respeta la preferencia del sistema de reducir el movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 2.5s; }
+  .card-accion:hover { transform: none; }
+  .visor-ctrl, .btn { transition: none; }
+}
+
+/* ---- Estado vacío de las tablas ---- */
+.tabla-vacia { text-align: center; padding: 30px 14px; color: var(--tx-muted); }
+.tabla-vacia-icono { font-size: 30px; display: block; margin-bottom: 8px; }
+.tabla-vacia strong { display: block; color: var(--tx-sec); margin-bottom: 4px; }
+
+/* ============================================================
+   Adaptación a pantallas pequeñas
+   ============================================================ */
+
+/* Tablet y móvil: la barra se reduce al logo + botón de menú, y las retículas
+   de dos columnas pasan a una. */
+@media (max-width: 860px) {
+  .nav-escritorio { display: none; }
+  .nav-toggle { display: inline-flex; }
+  .layout-panel { grid-template-columns: minmax(0, 1fr); }
+  .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Móvil estrecho */
+@media (max-width: 620px) {
+  .container { padding: 0 14px; }
+  .card { padding: 18px; }
+  .site-logo { font-size: 15px; }
+  .grid-2, .grid-3 { grid-template-columns: minmax(0, 1fr); }
+  h1 { font-size: 1.6rem; }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.1rem; }
+  .btn-lg { padding: 12px 20px; font-size: 14px; }
+  .btn { padding: 10px 16px; }
+  .modal-aviso { padding: 22px; }
+  .visor-wrap { min-height: 240px !important; }
+  /* El scroll horizontal de las tablas se deja con el dedo en móvil. */
+  .table-wrap { -webkit-overflow-scrolling: touch; }
+  .step span { font-size: 11px; }
+}
+
+/* ============================================================
+   Impresión: "Imprimir esta página" sacaba también el encabezado,
+   el pie y todos los botones, ensuciando el PDF impreso.
+   ============================================================ */
+@media print {
+  .site-header,
+  footer,
+  .btn,
+  .nav-toggle,
+  .modal-overlay { display: none !important; }
+
+  body { background: #fff; }
+  .app-shell { min-height: auto; }
+  .card { border: 1px solid #ddd; box-shadow: none; break-inside: avoid; }
+  .table-wrap { display: block !important; overflow: visible !important; }
+  table { font-size: 11px; }
+  .reporte-item { background: #fff; }
+  /* No se imprimen las URLs de los enlaces, que solo hacen ruido en papel. */
+  a[href]::after { content: ""; }
+}
+
+/* ---- Tarjetas de indicador (StatCard) ---- */
+/* auto-fit hace que se acomoden solas según el ancho, sin media queries. */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+}
+.stat-card-icono { font-size: 22px; flex-shrink: 0; line-height: 1; }
+.stat-card-valor { font-size: 22px; font-weight: 700; line-height: 1.2; }
+.stat-card-etiqueta { font-size: 12px; color: var(--tx-sec); margin-top: 2px; }
+.stat-card-detalle { font-size: 11px; color: var(--tx-muted); margin-top: 3px; }
+.stat-card-aviso { border-left: 4px solid var(--warning); }
+.stat-card-exito { border-left: 4px solid var(--success); }
+.stat-card-info { border-left: 4px solid var(--info); }
+
+/* ---- Pista del visor 3D ---- */
+.visor-pista {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--tx-muted);
+  text-align: center;
+}
+
+/* ---- Tarjeta de clima del taller (Fase 7) ---- */
+/* El color del borde marca si la humedad es buena para guardar melamina:
+   verde (ideal), ámbar (corregir algo) o rojo (riesgo para el material). */
+.clima-tarjeta {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--info);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+.clima-cabecera { display: flex; align-items: center; gap: 12px; }
+.clima-icono { font-size: 22px; line-height: 1; }
+.clima-titulo { font-weight: 700; font-size: 14px; }
+.clima-ubicacion { font-size: 12px; color: var(--tx-muted); }
+.clima-valores { margin-left: auto; text-align: right; }
+.clima-valores strong { font-size: 20px; display: block; line-height: 1.1; }
+.clima-valores span { font-size: 12px; color: var(--tx-muted); }
+.clima-recomendacion { margin-top: 10px; font-size: 13px; color: var(--tx-sec); line-height: 1.55; }
+.clima-nivel { text-transform: capitalize; }
+.clima-exito { border-left-color: var(--success); }
+.clima-aviso { border-left-color: var(--warning); }
+.clima-error { border-left-color: var(--error); }
+.clima-info { border-left-color: var(--info); }
+
+/* Nota discreta del tipo de cambio bajo las tablas de costos. */
+.nota-divisa { font-size: 12px; color: var(--tx-muted); margin-top: 10px; }
+
+/* ---- Estado de pago de una factura ---- */
+.badge-pendiente { background: var(--warning-bg); color: var(--warning); }
+.badge-pagada { background: var(--success-bg); color: var(--success); }
+
+/* =========================================================================
+   PANTALLA DE LOGIN — réplica del prototipo (frontend/index.html)
+   "Réplica + refinamientos": rejilla 50/50, hero con la marca y formulario
+   en tarjeta con sombra suave. Bloque NUEVO al final de este archivo: no se
+   modificó ninguna regla existente y la paleta no cambia (se reutilizan las
+   variables ya declaradas en :root). Solo lo usan "/" y "/login", rutas en
+   las que App.jsx oculta Header y Footer para que ocupe todo el viewport.
+   ========================================================================= */
+
+.page-auth {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+
+/* ---------- Lado izquierdo: hero con la identidad del taller ---------- */
+.auth-hero {
+  background: linear-gradient(135deg, var(--seminegro) 0%, var(--primary) 100%);
+  color: #fff;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Resplandor cálido del prototipo (tono piel al 15%). */
+.auth-hero::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(242, 202, 167, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+/* Foto de carpintería difuminada al 15% para no estorbar la lectura. */
+.hero-bg-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.auth-hero-content { position: relative; z-index: 1; max-width: 460px; }
+.auth-hero h1 { color: #fff; font-size: 36px; margin-bottom: 16px; }
+.auth-hero h1 span { color: var(--piel); }
+.auth-hero .subtitle-hero { font-size: 15px; opacity: 0.9; line-height: 1.5; }
+
+/* Lista de beneficios con título y descripción (refinamiento propio). */
+.auth-features {
+  list-style: none;
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.auth-features li { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; }
+.auth-features i { color: var(--piel); font-size: 18px; margin-top: 3px; flex-shrink: 0; }
+.auth-features .feature-text { display: flex; flex-direction: column; gap: 2px; }
+.auth-features .feature-title { font-weight: 700; }
+.auth-features .feature-desc { font-size: 13px; opacity: 0.8; font-weight: 400; }
+
+/* ---------- Lado derecho: formulario de acceso ---------- */
+.auth-form-side {
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: var(--surface);
+}
+.auth-form-wrapper { max-width: 420px; width: 100%; margin: 0 auto; }
+.auth-form-wrapper h2 { margin-bottom: 8px; }
+.auth-form-wrapper .subtitle { color: var(--tx-muted); margin-bottom: 24px; font-size: 14px; }
+.auth-form-wrapper form { display: flex; flex-direction: column; gap: 16px; }
+
+/* Refinamiento: el formulario vive en una tarjeta con sombra suave. */
+.auth-form-wrapper .auth-card { padding: 28px; box-shadow: 0 12px 32px rgba(20, 38, 36, 0.1); }
+
+/* El espaciado vertical lo aporta el gap del formulario. */
+.auth-form-wrapper .form-group { margin-bottom: 0; }
+
+/* Enlace de recuperación de contraseña: vuelve al login. */
+.auth-forgot {
+  align-self: flex-end;
+  font-size: 13px;
+  color: var(--primary);
+  text-decoration: none;
+}
+.auth-forgot:hover { text-decoration: underline; }
+
+.auth-footer { margin-top: 20px; text-align: center; font-size: 13px; color: var(--tx-muted); }
+.auth-footer a { color: var(--primary); font-weight: 700; text-decoration: none; }
+.auth-footer a:hover { text-decoration: underline; }
+
+/* Animación sutil de entrada (refinamiento sobre el prototipo). */
+@keyframes auth-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.auth-hero-content, .auth-form-wrapper { animation: auth-fade-up 0.5s ease both; }
+.auth-form-wrapper { animation-delay: 0.12s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-hero-content, .auth-form-wrapper { animation: none; }
+}
+
+/* ---------- Responsive: una sola columna, igual que el prototipo ---------- */
+@media (max-width: 768px) {
+  .page-auth { grid-template-columns: 1fr; }
+  .auth-hero { padding: 32px 24px; min-height: 200px; }
+  .auth-features { display: none; }
+  .auth-form-side { padding: 32px 24px; }
+}
+@media (max-width: 480px) {
+  .auth-hero h1 { font-size: 24px; }
 }

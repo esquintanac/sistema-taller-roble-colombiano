@@ -16,7 +16,7 @@ export default function DimensionsStep({ datos, errores, onChange, onTipoChange,
         <ModelTypeSelector tipoSeleccionado={datos.tipoModelo} onSelect={onTipoChange} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+      <div className="grid-3">
         <FormField label="Alto (cm)" name="alto" tipo="number" value={datos.alto} onChange={onChange} error={errores.alto} requerido />
         <FormField label="Ancho (cm)" name="ancho" tipo="number" value={datos.ancho} onChange={onChange} error={errores.ancho} requerido />
         <FormField label="Largo (cm)" name="largo" tipo="number" value={datos.largo} onChange={onChange} error={errores.largo} requerido />

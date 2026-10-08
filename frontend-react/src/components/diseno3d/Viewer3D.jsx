@@ -4,11 +4,16 @@
 // (GET /api/modelos/<id>/diseno/). Escena minimalista: solo el objeto
 // y la luz mínima necesaria para verlo, sin piso, cuadrícula ni fondo
 // decorativo que afecte el rendimiento.
+//
+// Las puertas son interactivas: se abren con un clic (o con el botón
+// "Abrir puertas") para poder ver el interior del mueble, que si no queda
+// tapado por la madera. Los cajones son solo representación visual: el
+// backend aún no calcula sus piezas internas (ver geometria3D.js).
 
 import { useRef, useState } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Edges } from "@react-three/drei";
-import { construirGeometria3D } from "./geometria3D";
+import { construirGeometria3D, calcularPuertasBloqueadas } from "./geometria3D";
 
 function Pieza({ dimensiones, posicion, color }) {
   return (
@@ -17,6 +22,79 @@ function Pieza({ dimensiones, posicion, color }) {
       <meshStandardMaterial color={color} />
       <Edges color="#142624" />
     </mesh>
+  );
+}
+
+// Puerta que se abre. Según modelo.tipo_puerta hace una cosa u otra:
+// abatible -> gira sobre su canto exterior; corrediza -> "sube" al riel de
+// afuera (sale en +z, hacia el observador) y corre lateralmente hasta
+// aparcarse ENCIMA de la puerta vecina, sin salirse nunca del ancho del
+// mueble. El movimiento va con useFrame y no con una librería de animación:
+// son unas pocas líneas y así el proyecto no gana una dependencia nueva.
+//
+// El grupo se ancla donde tiene que pivotar: en la bisagra si gira, o en el
+// centro de la pieza si se desliza, con la caja desplazada dentro. Sin eso
+// una puerta abatible rotaría sobre sí misma en lugar de abrirse.
+function Puerta({ caja, abierta, onAlternar }) {
+  const grupo = useRef(null);
+  // 0 = cerrada, 1 = abierta. Se interpola en cada fotograma hacia el
+  // destino, en vez de saltar de golpe.
+  const progreso = useRef(0);
+  const { modo, bisagra, angulo, recorrido = 0, via = 0 } = caja.apertura;
+
+  const ancla = modo === "abatible" ? bisagra : caja.posicion;
+  const local = [
+    caja.posicion[0] - ancla[0],
+    caja.posicion[1] - ancla[1],
+    caja.posicion[2] - ancla[2],
+  ];
+
+  useFrame((estado, delta) => {
+    if (!grupo.current) return;
+    // Interpolación exponencial: la puerta se abre siempre a la misma
+    // velocidad visual, vaya el navegador a 30 o a 144 fotogramas.
+    const factor = 1 - Math.exp(-8 * delta);
+    progreso.current += ((abierta ? 1 : 0) - progreso.current) * factor;
+
+    if (modo === "abatible") {
+      grupo.current.rotation.y = progreso.current * angulo;
+    } else {
+      // Corrediza: el z llega casi al principio del movimiento (como si la
+      // puerta saliera de su pista) y enseguida corre en x hasta aparcarse
+      // sobre la vecina. Todo dentro del ancho del mueble.
+      const avanceRiel = Math.min(1, progreso.current * 2.5);
+      grupo.current.position.set(
+        caja.posicion[0] + recorrido * progreso.current,
+        caja.posicion[1],
+        caja.posicion[2] + via * avanceRiel
+      );
+    }
+  });
+
+  return (
+    <group ref={grupo} position={ancla}>
+      <mesh
+        position={local}
+        onClick={(evento) => {
+          evento.stopPropagation();
+          // Si el puntero se movió mucho, lo que el usuario estaba haciendo
+          // era girar el mueble, no abrir la puerta.
+          if (evento.delta > 2) return;
+          onAlternar();
+        }}
+        onPointerOver={(evento) => {
+          evento.stopPropagation();
+          document.body.style.cursor = "pointer";
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = "";
+        }}
+      >
+        <boxGeometry args={caja.dimensiones} />
+        <meshStandardMaterial color={caja.color} />
+        <Edges color="#142624" />
+      </mesh>
+    </group>
   );
 }
 
@@ -94,6 +172,53 @@ export default function Viewer3D({ piezas = [], modelo = {}, etiqueta = "Vista 3
     setGirando((valor) => !valor);
   }
 
+  // ---- Puertas ----
+  // Estado por id de pieza, para poder abrir una sola sin afectar a las
+  // demás. El valor NO es un booleano sino el ORDEN en el que se abrió
+  // (contador; 0 = cerrada): con él se resuelve quién gana cuando dos
+  // corredizas del mismo riel quieren aparcarse en la misma zona —gana la
+  // que llegó primero, como en un riel real, donde una puerta no puede
+  // pasar por encima de otra del mismo riel—. Los ids son estables porque
+  // construirGeometria3D los numera por posición, así que el estado
+  // sobrevive a los re-render.
+  const [abiertas, setAbiertas] = useState({});
+  const ordenAperturas = useRef(0);
+  const puertas = cajas.filter((c) => c.tipo === "puerta");
+  const hayPuertas = puertas.length > 0;
+  const algunaAbierta = puertas.some((c) => abiertas[c.id]);
+  const bloqueadas = calcularPuertasBloqueadas(puertas, abiertas);
+
+  function alternarPuerta(id) {
+    setAbiertas((previas) => {
+      if (previas[id]) return { ...previas, [id]: 0 };
+      ordenAperturas.current += 1;
+      return { ...previas, [id]: ordenAperturas.current };
+    });
+  }
+
+  function alternarTodasLasPuertas() {
+    const abrir = !algunaAbierta;
+    setAbiertas((previas) => {
+      const siguiente = { ...previas };
+      puertas.forEach((p) => {
+        // Corredizas: el botón abre solo las que pueden apilarse (las de
+        // zona impar, que se aparcan sobre su vecina izquierda y descubren
+        // el hueco). Abrir TODAS a la vez las cruzaría entre sí y el
+        // mueble quedaría tapado otra vez, como sin abrir. Las abatibles
+        // sí se abren todas: cada una gira en su propia bisagra.
+        const puedeAbrir =
+          p.apertura?.modo !== "corrediza" || p.apertura.abreConBoton;
+        if (abrir && puedeAbrir) {
+          ordenAperturas.current += 1;
+          siguiente[p.id] = ordenAperturas.current;
+        } else {
+          siguiente[p.id] = 0;
+        }
+      });
+      return siguiente;
+    });
+  }
+
   // Zoom explícito moviendo la cámara a lo largo de la recta que la une
   // con el punto que está mirando. A propósito NO se usan
   // dollyIn/dollyOut de OrbitControls: su convención de signo cambió
@@ -148,9 +273,23 @@ export default function Viewer3D({ piezas = [], modelo = {}, etiqueta = "Vista 3
           <ambientLight intensity={0.7} />
           <directionalLight position={[5, 8, 5]} intensity={0.9} />
 
-          {cajas.map((c) => (
-            <Pieza key={c.id} dimensiones={c.dimensiones} posicion={c.posicion} color={c.color} />
-          ))}
+          {/* Las puertas son piezas interactivas; el resto se dibuja como
+              cajas fijas. */}
+          {cajas.map((c) =>
+            c.tipo === "puerta" ? (
+              <Puerta
+                key={c.id}
+                caja={c}
+                // Si la puerta quedó bloqueada por otra del mismo riel que
+                // llegó primero a su zona, se comporta como cerrada (ver
+                // calcularPuertasBloqueadas en geometria3D.js).
+                abierta={Boolean(abiertas[c.id]) && !bloqueadas[c.id]}
+                onAlternar={() => alternarPuerta(c.id)}
+              />
+            ) : (
+              <Pieza key={c.id} dimensiones={c.dimensiones} posicion={c.posicion} color={c.color} />
+            )
+          )}
 
           <OrbitControls
             ref={controlesRef}
@@ -176,7 +315,16 @@ export default function Viewer3D({ piezas = [], modelo = {}, etiqueta = "Vista 3
         <button type="button" className="btn btn-secondary btn-sm" onClick={alejar}>
           Zoom −
         </button>
+        {hayPuertas && (
+          <button type="button" className="btn btn-primary btn-sm" onClick={alternarTodasLasPuertas}>
+            {algunaAbierta ? "Cerrar puertas" : "Abrir puertas"}
+          </button>
+        )}
       </div>
+
+      {hayPuertas && (
+        <p className="visor-pista">Haz clic en una puerta para abrirla o cerrarla.</p>
+      )}
     </div>
   );
 }

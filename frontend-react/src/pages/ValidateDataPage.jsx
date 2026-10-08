@@ -26,6 +26,11 @@ const ETIQUETAS = {
   llevaPuertas: { label: "¿Lleva puertas?", formato: (v) => (v ? "Sí" : "No") },
   tipoPuerta: { label: "Tipo de puerta" },
   numPuertas: { label: "Número de puertas" },
+  color: { label: "Color de la melanina" },
+  llevaZocalo: { label: "¿Lleva zócalo?", formato: (v) => (v ? "Sí" : "No") },
+  alturaZocalo: { label: "Altura del zócalo", unidad: "cm" },
+  llevaFondo: { label: "¿Lleva fondo trasero?", formato: (v) => (v ? "Sí" : "No") },
+  materialFondo: { label: "Material del fondo" },
   clienteEtiqueta: { label: "Cliente" },
   observaciones: { label: "Observaciones" },
 };
@@ -35,7 +40,19 @@ const ORDEN = [
   "tipoModelo", "alto", "ancho", "largo", "grosor",
   "compartimentos", "entrepanos", "llevaCajones", "numCajones",
   "llevaBarra", "alturaBarra", "llevaPuertas", "tipoPuerta", "numPuertas",
+  "color", "llevaZocalo", "alturaZocalo", "llevaFondo", "materialFondo",
   "clienteEtiqueta", "observaciones",
+];
+
+// Campos sí/no que SÍ deben verse cuando su valor es false ("No"): son
+// decisiones explícitas del usuario. Un false en un campo que no es de
+// este grupo no aporta nada al resumen y se omite.
+const CAMPOS_BOOLEANOS = [
+  "llevaCajones",
+  "llevaBarra",
+  "llevaPuertas",
+  "llevaZocalo",
+  "llevaFondo",
 ];
 
 export default function ValidateDataPage() {
@@ -108,7 +125,7 @@ export default function ValidateDataPage() {
 
             // Oculta campos vacíos, false sin marcar, o que no aplican
             const estaVacio = valor === "" || valor === undefined || valor === null;
-            const esFalseIrrelevante = valor === false && !["llevaCajones", "llevaBarra", "llevaPuertas"].includes(clave);
+            const esFalseIrrelevante = valor === false && !CAMPOS_BOOLEANOS.includes(clave);
             if (estaVacio || esFalseIrrelevante) return null;
 
             const valorMostrado = config.formato

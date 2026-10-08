@@ -10,14 +10,9 @@ import StatusBadge from "../components/ui/StatusBadge";
 import Button from "../components/ui/Button";
 import Alert from "../components/ui/Alert";
 import historialService, { mapearRegistro } from "../services/historialService";
-
-// Traduce el error de axios a un mensaje entendible para el usuario.
-function mensajeDeError(error) {
-  const estado = error?.response?.status;
-  if (estado === 401) return "Tu sesión expiró. Vuelve a iniciar sesión.";
-  if (estado === 403) return "No tienes permiso para consultar el historial.";
-  return "No se pudo conectar con el servidor. Verifica que el backend esté corriendo.";
-}
+import { mensajeDeError } from "../utils/descargas";
+import Spinner from "../components/ui/Spinner";
+import StatCard from "../components/ui/StatCard";
 
 const COLUMNAS = [
   { key: "id", label: "ID" },
@@ -57,7 +52,7 @@ export default function HistoryPage() {
       const datos = await historialService.listar();
       setRegistros(datos.map(mapearRegistro));
     } catch (e) {
-      setError(mensajeDeError(e));
+      setError(mensajeDeError(e, "el historial"));
     } finally {
       setCargando(false);
     }
@@ -86,6 +81,7 @@ export default function HistoryPage() {
   }, [registros, busqueda, filtro]);
 
   const pendientes = registros.filter((registro) => registro.estado !== "Revisado").length;
+  const revisados = registros.length - pendientes;
 
   return (
     <div className="container" style={{ paddingTop: 30, paddingBottom: 40 }}>
@@ -96,7 +92,7 @@ export default function HistoryPage() {
 
       {cargando ? (
         <div className="card">
-          <p style={{ color: "var(--tx-sec)" }}>Cargando historial…</p>
+          <Spinner texto="Cargando historial…" />
         </div>
       ) : error ? (
         <div className="card">
@@ -107,6 +103,24 @@ export default function HistoryPage() {
         </div>
       ) : (
         <>
+          {/* Indicadores del historial. Salen de la lista ya cargada: sin
+              llamadas extra. */}
+          <div className="stats-grid">
+            <StatCard icono="🗂️" etiqueta="Diseños totales" valor={registros.length} />
+            <StatCard icono="⏳" etiqueta="Pendientes de revisión" valor={pendientes} tono="aviso" />
+            <StatCard icono="✅" etiqueta="Revisados" valor={revisados} tono="exito" />
+            <StatCard
+              icono="🔎"
+              etiqueta="Mostrando"
+              valor={filtrados.length}
+              detalle={
+                filtrados.length !== registros.length
+                  ? "con la búsqueda o el filtro actual"
+                  : "sin filtros aplicados"
+              }
+            />
+          </div>
+
           <div className="card" style={{ marginBottom: 18 }}>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
               <input
@@ -140,6 +154,8 @@ export default function HistoryPage() {
             <DataTable
               columnas={COLUMNAS}
               datos={filtrados}
+              tituloVacio="No hay diseños que mostrar"
+              mensajeVacio="Prueba con otra búsqueda o cambia el filtro de estado."
               renderAcciones={(fila) => (
                 <Button
                   tamano="sm"

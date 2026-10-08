@@ -11,7 +11,7 @@ export default function DistributionStep({ datos, errores, onChange, onToggle, o
       <h2>Nuevo Modelo</h2>
       <h3 style={{ color: "var(--marron-osc)" }}>Distribución interna</h3>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div className="grid-2">
         <FormField
           label="Compartimentos verticales (1-6)" name="compartimentos" as="select"
           value={datos.compartimentos} onChange={onChange} error={errores.compartimentos} requerido

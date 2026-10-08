@@ -6,13 +6,8 @@ import Button from "../components/ui/Button";
 import Alert from "../components/ui/Alert";
 import Viewer3D from "../components/diseno3d/Viewer3D";
 import modelosService from "../services/modelosService";
-
-function mensajeDeError(error) {
-  const estado = error?.response?.status;
-  if (estado === 401) return "Tu sesión expiró. Vuelve a iniciar sesión.";
-  if (estado === 404) return "No se encontró el modelo generado.";
-  return "No se pudo conectar con el servidor. Verifica que el backend esté corriendo.";
-}
+import { mensajeDeError } from "../utils/descargas";
+import Spinner from "../components/ui/Spinner";
 
 export default function Design3DPage() {
   const navigate = useNavigate();
@@ -39,7 +34,7 @@ export default function Design3DPage() {
         setModelo(datosModelo);
         setDiseno(datosDiseno);
       } catch (e) {
-        setError(mensajeDeError(e));
+        setError(mensajeDeError(e, "el modelo generado"));
       } finally {
         setCargando(false);
       }
@@ -49,7 +44,7 @@ export default function Design3DPage() {
   if (cargando) {
     return (
       <div className="container" style={{ paddingTop: 30 }}>
-        <div className="card"><p style={{ color: "var(--tx-sec)" }}>Calculando el diseño…</p></div>
+        <div className="card"><Spinner texto="Calculando el diseño…" /></div>
       </div>
     );
   }
@@ -75,7 +70,7 @@ export default function Design3DPage() {
         {modelo.nombre_modelo} — {modelo.alto} × {modelo.ancho} × {modelo.largo} cm
       </p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 24 }}>
+      <div className="layout-panel">
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <Viewer3D piezas={diseno.piezas} modelo={modelo} />
 
@@ -105,7 +100,7 @@ export default function Design3DPage() {
             </div>
           ))}
           <p style={{ fontSize: 12, color: "var(--tx-muted)", marginTop: 10 }}>
-            Melanina necesaria: {diseno.melanina.laminas_necesarias} láminas ({diseno.melanina.lamina_estandar})
+            Melanina necesaria: {Math.ceil(diseno.melanina.laminas_necesarias)} láminas ({diseno.melanina.lamina_estandar})
           </p>
         </div>
       </div>

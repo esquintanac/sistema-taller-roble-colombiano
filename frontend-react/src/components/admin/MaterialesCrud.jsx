@@ -10,15 +10,16 @@ import FormField from "../ui/FormField";
 import Button from "../ui/Button";
 import Alert from "../ui/Alert";
 import Card from "../ui/Card";
+// pesos vive en utils/descargas para que el costo se vea igual en todo el
+// sistema (aquí y en el detalle del administrador) sin duplicar el formato.
+import { pesos, textoDivisa } from "../../utils/descargas";
+import Spinner from "../ui/Spinner";
+import { useTipoCambio } from "../../hooks/useDatosExternos";
 
 const MATERIAL_VACIO = {
     nombre_material: "", tipo_material: "", unidad_medida: "",
     costo_unitario: "", stock: "", stock_minimo: "",
 };
-
-// Formato de pesos, igual al que usa AdminDesignDetailPage para que el
-// costo se vea consistente en todo el sistema: 85000 -> $85.000
-const pesos = (valor) => `$${Number(valor || 0).toLocaleString("es-CO")}`;
 
 const COLUMNAS = [
     { key: "id_material", label: "ID" },
@@ -35,6 +36,9 @@ export default function MaterialesCrud() {
     const [idEditando, setIdEditando] = useState(null);
     const [mensaje, setMensaje] = useState(null);
     const [cargando, setCargando] = useState(true);
+    // Tipo de cambio del día (Fase 7). Solo se usa para una nota al pie; si el
+    // servicio externo no responde, la tabla se muestra igual sin ella.
+    const divisa = useTipoCambio();
 
     useEffect(() => {
         cargarMateriales();
@@ -118,11 +122,13 @@ export default function MaterialesCrud() {
             </Card>
 
             {cargando ? (
-                <p>Cargando materiales...</p>
+                <Spinner texto="Cargando materiales…" />
             ) : (
                 <DataTable
                 columnas={COLUMNAS}
                 datos={materiales}
+                tituloVacio="No hay materiales"
+                mensajeVacio="Registra el primero con el formulario de arriba."
                 renderAcciones={(m) => (
                     <div style={{ display: "flex", gap: 6 }}>
                         <Button tamano="sm" variante="secondary" onClick={() => iniciarEdicion(m)}>Editar</Button>
@@ -130,6 +136,13 @@ export default function MaterialesCrud() {
                     </div>
                 )}
                 />
+            )}
+
+            {divisa && (
+                <p className="nota-divisa">
+                    Tipo de cambio de hoy: {textoDivisa(divisa)}. Los costos de la
+                    tabla se muestran en pesos colombianos.
+                </p>
             )}
         </div>
     );

@@ -17,6 +17,9 @@ const DATOS_INICIALES = {
   llevaCajones: false, numCajones: "",
   llevaBarra: false, alturaBarra: "",
   llevaPuertas: true, tipoPuerta: "abatible", numPuertas: "2",
+  color: "",
+  llevaZocalo: false, alturaZocalo: "",
+  llevaFondo: true, materialFondo: "MDF 3mm",
   idCliente: "", observaciones: "",
 };
 
@@ -109,6 +112,10 @@ export default function ModelWizard() {
 
   function handleRegistrar() {
     const obligatorios = ["idCliente"];
+    // El zócalo es opcional como concepto, pero si el usuario lo activa
+    // debe indicar su altura: el backend guarda altura_zocalo = 0 cuando
+    // no se usa, así que un "sí" sin medida dejaría el dato incompleto.
+    if (datos.llevaZocalo) obligatorios.push("alturaZocalo");
     if (!validarCampos(obligatorios)) return;
 
     // Se guarda también el nombre legible del cliente para que el resumen

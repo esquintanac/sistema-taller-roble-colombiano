@@ -30,26 +30,14 @@ import historialService, { formatearFecha, mapearRegistro } from "../services/hi
 import modelosService from "../services/modelosService";
 import materialesService from "../services/materialesService";
 import facturasService, { facturaDeModelo } from "../services/facturasService";
-// guardarBlob se comparte con ReportPage para no tener dos copias de la
-// misma descarga de PDF.
-import { guardarBlob } from "../utils/descargas";
+// Estas utilidades se comparten con el resto de pantallas para no mantener
+// copias que terminan divergiendo (guardarBlob ya se usaba así desde
+// ReportPage; pesos/numero/mensajeDeError estaban duplicados aquí).
+import { aDolares, guardarBlob, mensajeDeError, numero, pesos } from "../utils/descargas";
 import Viewer3D from "../components/diseno3d/Viewer3D";
-
-// Traduce el error de axios a un mensaje entendible para el usuario.
-function mensajeDeError(error) {
-  const estado = error?.response?.status;
-  if (estado === 401) return "Tu sesión expiró. Vuelve a iniciar sesión.";
-  if (estado === 403) return "No tienes permiso para consultar este diseño.";
-  if (estado === 404) return "No se encontró el diseño solicitado.";
-  return "No se pudo conectar con el servidor. Verifica que el backend esté corriendo.";
-}
-
-// Formato de pesos colombianos: 85000 -> $85.000
-const pesos = (valor) => `$${Number(valor || 0).toLocaleString("es-CO")}`;
-
-// Medidas con un decimal como máximo: 118.42 -> 118,4
-const numero = (valor) =>
-  Number(valor || 0).toLocaleString("es-CO", { maximumFractionDigits: 1 });
+import Spinner from "../components/ui/Spinner";
+import StatCard from "../components/ui/StatCard";
+import { useTipoCambio } from "../hooks/useDatosExternos";
 
 // Color del badge de estado de pago: verde si ya está pagada, ámbar si no.
 function colorEstadoPago(estado) {
@@ -100,6 +88,10 @@ export default function AdminDesignDetailPage() {
   const [aviso, setAviso] = useState(null);
   const [marcando, setMarcando] = useState(false);
   const [descargandoFactura, setDescargandoFactura] = useState(false);
+  // Tipo de cambio del día (Fase 7): permite mostrar el costo también en
+  // dólares, junto al valor en pesos. Si el servicio no responde, el costo
+  // se sigue viendo igual, solo sin el equivalente.
+  const divisa = useTipoCambio();
 
   const cargarDetalle = useCallback(async () => {
     setCargando(true);
@@ -176,7 +168,7 @@ export default function AdminDesignDetailPage() {
         }
       }
     } catch (e) {
-      setError(mensajeDeError(e));
+      setError(mensajeDeError(e, "este diseño"));
     } finally {
       setCargando(false);
     }
@@ -199,7 +191,11 @@ export default function AdminDesignDetailPage() {
         mensaje: "El registro quedó marcado como Revisado (RF9).",
       });
     } catch (e) {
-      setAviso({ tipo: "error", titulo: "No se pudo actualizar", mensaje: mensajeDeError(e) });
+      setAviso({
+        tipo: "error",
+        titulo: "No se pudo actualizar",
+        mensaje: mensajeDeError(e, "este diseño"),
+      });
     } finally {
       setMarcando(false);
     }
@@ -215,8 +211,8 @@ export default function AdminDesignDetailPage() {
     } catch (e) {
       setAviso({
         tipo: "error",
-        titulo: "No se pudo generar el reporte",
-        mensaje: mensajeDeError(e),
+        titulo: "No se pudo generar",
+        mensaje: mensajeDeError(e, "el reporte"),
       });
     }
   }
@@ -234,7 +230,7 @@ export default function AdminDesignDetailPage() {
       setAviso({
         tipo: "error",
         titulo: "No se pudo descargar la factura",
-        mensaje: mensajeDeError(e),
+        mensaje: mensajeDeError(e, "la factura"),
       });
     } finally {
       setDescargandoFactura(false);
@@ -277,7 +273,7 @@ export default function AdminDesignDetailPage() {
       setAviso({
         tipo: "error",
         titulo: "No se pudo asociar la melanina",
-        mensaje: detalle || mensajeDeError(e),
+        mensaje: detalle || mensajeDeError(e, "este diseño"),
       });
     } finally {
       setAsociando(false);
@@ -288,7 +284,7 @@ export default function AdminDesignDetailPage() {
     return (
       <div className="container" style={{ paddingTop: 30 }}>
         <div className="card">
-          <p style={{ color: "var(--tx-sec)" }}>Cargando diseño…</p>
+          <Spinner texto="Cargando diseño…" />
         </div>
       </div>
     );
@@ -384,12 +380,51 @@ export default function AdminDesignDetailPage() {
         Creado por {registro.creadoPor} · {registro.fecha} · Cliente: {registro.cliente}
       </p>
 
+      {/* Indicadores del diseño. Todos salen de datos que la pantalla ya
+          tiene cargados: ninguna llamada extra a la API. */}
+      <div className="stats-grid">
+        <StatCard
+          icono="🧩"
+          etiqueta="Piezas a cortar"
+          valor={piezas.length}
+          detalle={`${modelo?.compartimientos || 1} compartimentos`}
+        />
+        <StatCard
+          icono="🪵"
+          etiqueta="Láminas necesarias"
+          valor={laminasAComprar}
+          detalle={melanina ? `de ${melanina.lamina_estandar} cm` : undefined}
+        />
+        <StatCard
+          icono="📦"
+          etiqueta="Materiales asociados"
+          valor={materialesModelo.length}
+        />
+        <StatCard
+          icono="💰"
+          etiqueta="Costo real"
+          valor={fuenteCosto === "sinCosto" ? "—" : pesos(costoFacturado ?? costoMateriales)}
+          tono={fuenteCosto === "factura" ? "exito" : fuenteCosto === "sinCosto" ? "neutro" : "aviso"}
+          detalle={
+            [
+              aDolares(costoFacturado ?? costoMateriales, divisa?.usd_por_cop),
+              factura?.estado_pago ||
+                (fuenteCosto === "materiales" ? "Calculado, sin factura" : "Sin materiales aún"),
+            ]
+              // El filtro quita los huecos: si no hay tasa, simplemente no se
+              // pinta el equivalente en dólares y el resto sigue igual.
+              .filter(Boolean)
+              .join(" · ")
+          }
+        />
+      </div>
+
       {aviso && <Alert tipo={aviso.tipo} titulo={aviso.titulo} mensaje={aviso.mensaje} />}
       {registro.comentario && (
         <Alert tipo="info" titulo="Comentario del registro" mensaje={registro.comentario} />
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 24 }}>
+      <div className="layout-panel">
         <div>
           <div style={{ marginBottom: 20 }}>
             <Viewer3D piezas={piezas} modelo={modelo} etiqueta="Vista 3D — solo lectura" altura={280} />
