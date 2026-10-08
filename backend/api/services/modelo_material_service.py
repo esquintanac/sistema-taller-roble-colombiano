@@ -59,6 +59,9 @@ class ModeloMaterialService:
         datos_modelo = {
             "alto": modelo.alto, "ancho": modelo.ancho, "largo": modelo.largo,
             "grosor": modelo.grosor,
+            # Los divisores también cuentan para el cálculo de la lámina: si
+            # no se tuvieran en cuenta, se pediría menos melanina de la real.
+            "compartimientos": modelo.compartimientos,
             "entrepanos_compartimientos": modelo.entrepanos_compartimientos,
             "puertas": modelo.puertas,
             "material_fondo": modelo.material_fondo,

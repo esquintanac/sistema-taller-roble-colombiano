@@ -47,6 +47,18 @@ def facturas_lista(request):
 
 @api_view(["GET"])
 @requiere_rol("Administrador")
+def facturas_modelos_facturables(request):
+    """GET /api/facturas/modelos-facturables/ -- diseños que se pueden facturar.
+
+    Solo Administrador, igual que el resto del módulo de facturación.
+
+    Se declara antes que el detalle con <int:id_factura> en el archivo de rutas
+    para dejar claro que "modelos-facturables" es un camino propio y no un ID.
+    """
+    return Response(FacturaService.listar_modelos_facturables(), status=status.HTTP_200_OK)
+
+@api_view(["GET"])
+@requiere_rol("Administrador")
 def facturas_detalle(request, id_factura):
     factura = FacturaService.obtener(id_factura)
     if factura is None:

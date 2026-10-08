@@ -127,6 +127,10 @@ class ModeloService:
         datos_modelo = {
             "alto": modelo.alto, "ancho": modelo.ancho, "largo": modelo.largo,
             "grosor": modelo.grosor,
+            # Necesario para emitir los divisores verticales: sin él, un
+            # modelo guardado con 4 compartimentos se calcularía como si
+            # fuera uno solo.
+            "compartimientos": modelo.compartimientos,
             "entrepanos_compartimientos": modelo.entrepanos_compartimientos,
             "puertas": modelo.puertas,
             "material_fondo": modelo.material_fondo,

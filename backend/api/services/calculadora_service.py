@@ -26,8 +26,8 @@ class CalculadoraService:
 
         Args:
             modelo_datos (dict): debe contener alto, ancho, largo,
-                grosor, entrepanos_compartimientos, puertas,
-                material_fondo (opcional, puede ser None o "").
+                grosor, compartimientos, entrepanos_compartimientos,
+                puertas, material_fondo (opcional, puede ser None o "").
 
         Returns:
             list[dict]: cada pieza con su nombre y medida (ancho x alto en cm).
@@ -36,6 +36,7 @@ class CalculadoraService:
         ancho = float(modelo_datos["ancho"])
         largo = float(modelo_datos["largo"])
         grosor_cm = float(modelo_datos.get("grosor", 18)) / 10  # mm -> cm
+        compartimientos = int(modelo_datos.get("compartimientos", 0) or 0)
         entrepanos = int(modelo_datos.get("entrepanos_compartimientos", 0) or 0)
         num_puertas = int(modelo_datos.get("puertas", 0) or 0)
         lleva_fondo = bool(modelo_datos.get("material_fondo"))
@@ -47,6 +48,28 @@ class CalculadoraService:
         piezas.append({"nombre": "Panel lateral derecho", "ancho": largo, "alto": alto})
         piezas.append({"nombre": "Base inferior", "ancho": ancho, "alto": largo})
         piezas.append({"nombre": "Techo", "ancho": ancho, "alto": largo})
+
+        # Divisores verticales: separan el interior en "compartimientos".
+        # Un mueble con N compartimentos necesita N-1 divisores, así que son
+        # piezas de verdad: van al reporte de construcción y cuentan en
+        # Piezas_cortar. Sin ellos el mueble no se podría construir, por eso
+        # antes de añadirlos solo se dibujaban en el visor 3D.
+        # El hueco interior se reparte en partes iguales, con el mismo
+        # criterio que usan los entrepaños para la altura.
+        if compartimientos > 1:
+            espacio_util_ancho = ancho - (grosor_cm * 2)
+            alto_divisor = alto - (grosor_cm * 2)
+            # Con un mueble muy bajo o muy estrecho el hueco interior puede
+            # quedar en cero o negativo; en ese caso no cabe ningún divisor.
+            if espacio_util_ancho > 0 and alto_divisor > 0:
+                for i in range(1, compartimientos):
+                    piezas.append({
+                        "nombre": f"Divisor vertical {i}",
+                        # Se reportan las dos caras grandes de la pieza, como
+                        # en el resto: fondo x alto, medido en cm.
+                        "ancho": round(largo - grosor_cm, 2),
+                        "alto": round(alto_divisor, 2),
+                    })
 
         # Entrepaños: se descuenta 2 veces el grosor por el ancho que ocupan los laterales
         for i in range(1, entrepanos + 1):

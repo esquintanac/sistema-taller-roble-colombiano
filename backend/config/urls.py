@@ -28,4 +28,6 @@ urlpatterns = [
     path("api/", include("api.routes.modelo_routes")),
     path("api/", include("api.routes.historial_routes")),
     path("api/", include("api.routes.factura_routes")),
+    # Integraciones externas (Fase 7): clima del taller y tipo de cambio.
+    path("api/", include("api.routes.externo_routes")),
 ]

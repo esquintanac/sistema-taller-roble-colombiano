@@ -23,6 +23,17 @@ class FacturaService:
         return cls.dao.consultar_factura_por_id(id_factura)
 
     @classmethod
+    def listar_modelos_facturables(cls):
+        """Modelos que ya tienen materiales y por tanto se les puede facturar.
+
+        Alimenta el selector de la pantalla de facturas. Se expone aparte del
+        historial porque el historial tiene un registro por accion (creacion y
+        revisiones), no uno por modelo, y ademas no indica si el modelo quedo
+        con materiales.
+        """
+        return cls.dao.consultar_modelos_facturables()
+
+    @classmethod
     def generar_factura(cls, id_modelo: int, metodo_pago: str = ""):
         modelo = cls.modelo_dao.consultar_modelo_por_id(id_modelo)
         if modelo is None:

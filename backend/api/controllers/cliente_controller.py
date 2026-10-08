@@ -42,6 +42,14 @@ def clientes_lista(request):
         return Response({"exito": False, "errores": errores}, status=status.HTTP_400_BAD_REQUEST)
 
     nuevo = ClienteService.crear(request.data)
+    # Si el INSERT falló, ClienteService.crear devuelve None. Antes se devolvía
+    # 201 con el último cliente de la lista y el admin veía "guardado" sin que
+    # nada se hubiera escrito realmente.
+    if nuevo is None:
+        return Response(
+            {"exito": False, "mensaje": "No se pudo guardar el cliente. Revisa los datos e intenta de nuevo."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
     return Response(_cliente_a_dict(nuevo), status=status.HTTP_201_CREATED)
 
 

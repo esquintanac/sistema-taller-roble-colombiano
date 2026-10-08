@@ -142,3 +142,53 @@ class FacturaDAO:
         finally:
             cursor.close()
             Conexion.cerrar_conexion(conexion)
+
+    def consultar_modelos_facturables(self) -> list:
+        """Lista los modelos a los que se les puede emitir una factura.
+
+        Este listado alimenta el selector "Diseño a facturar". Antes se armaba
+        con el historial, que sirve para otra cosa: guarda un registro por
+        ACCION (creacion y cada revision), no uno por modelo, asi que un mismo
+        modelo salia repetido y ademas no decia si tenia materiales con los que
+        facturar. Aqui se resuelve de raiz:
+
+          - INNER JOIN con modelo_material: si el modelo no tiene materiales NO
+            aparece, que es justo la condicion que exige generar_factura. Asi el
+            administrador no elige a ciegas y nunca recibe el 400 "sin
+            materiales".
+          - GROUP BY: un modelo con N materiales produce UNA sola fila.
+          - Cliente con INNER JOIN porque la tabla factura exige id_cliente
+            (NOT NULL): un modelo sin cliente tampoco se podria facturar.
+        """
+        conexion = Conexion.obtener_conexion()
+        modelos = []
+        if conexion is None:
+            return modelos
+        try:
+            cursor = conexion.cursor()
+            cursor.execute("""
+            SELECT m.id_modelo, m.Nombre_modelo,
+                   c.Nombre AS nombre_cliente, c.Apellido AS apellido_cliente,
+                   COUNT(mm.id_modelo_material) AS num_materiales,
+                   SUM(mm.Costo_utilizado) AS total_estimado
+            FROM modelo m
+            INNER JOIN modelo_material mm ON mm.id_modelo = m.id_modelo
+            INNER JOIN Cliente c ON c.id_cliente = m.id_cliente
+            GROUP BY m.id_modelo, m.Nombre_modelo, c.Nombre, c.Apellido
+            ORDER BY m.id_modelo DESC
+            """)
+            for fila in cursor.fetchall():
+                modelos.append({
+                    "id_modelo": fila[0],
+                    "nombre_modelo": fila[1],
+                    "cliente": f"{fila[2] or ''} {fila[3] or ''}".strip(),
+                    "num_materiales": int(fila[4] or 0),
+                    "total_estimado": float(fila[5] or 0),
+                })
+            return modelos
+        except Error as error:
+            print(f"Error al consultar los modelos facturables: {error}")
+            return modelos
+        finally:
+            cursor.close()
+            Conexion.cerrar_conexion(conexion)
