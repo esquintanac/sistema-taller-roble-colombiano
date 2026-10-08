@@ -1,6 +1,13 @@
-// src/components/auth/RegistrerForm.jsx
-// Formulario completo de registro (RF1). incluye el RoleSelector
-// para elegir Carpintero o Administrador.
+// src/components/auth/RegisterForm.jsx
+// Formulario completo de registro (RF1) en DOS pasos:
+//   Paso 1: los datos del formulario (incluye RoleSelector). El backend
+//           los valida y, si todo está bien, envía el código de 6 dígitos
+//           al correo informado.
+//   Paso 2: el código de verificación. Solo con el código correcto y
+//           consumido el backend crea la cuenta; después se va al login.
+//
+// Los datos del formulario —incluida la contraseña— viven SOLO en memoria
+// React entre pasos: nunca se guardan en localStorage/sessionStorage.
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +16,7 @@ import FormField from "../ui/FormField";
 import Button from "../ui/Button";
 import Alert from "../ui/Alert";
 import RoleSelector from "./RoleSelector";
+import VerificationCodeForm from "./VerificationCodeForm";
 
 const CAMPOS_INICIALES = {
     nombre: "", apellidos: "", telefono: "", correo: "", usuario: "", contrasena: "",
@@ -20,6 +28,11 @@ export default function RegisterForm() {
     const [errores, setErrores] = useState({});
     const [erroresServidor, setErroresServidor] = useState([]);
     const [cargando, setCargando] = useState(false);
+    // Paso 1 = datos del formulario; paso 2 = código de verificación.
+    const [paso, setPaso] = useState(1);
+    // Respuesta del paso 1 (id, destino enmascarado, tiempos). Se mantiene
+    // solo en memoria: sin ella se vuelve al paso 1 a pedir otro código.
+    const [verificacion, setVerificacion] = useState(null);
     const navigate = useNavigate();
 
     function handleChange(e) {
@@ -35,28 +48,73 @@ export default function RegisterForm() {
         return Object.keys(nuevosErrores).length === 0;
     }
 
-    async function handleSubmit(e) {
+    // Paso 1: valida los datos contra el backend y hace enviar el código
+    // al correo informado. Si el backend responde 400, data.errores trae
+    // la lista (campos inválidos o cuentas duplicadas).
+    async function solicitarCodigo(e) {
         e.preventDefault();
         setErroresServidor([]);
         if (!validar()) return;
 
         setCargando(true);
         try {
-            await authService.registrar({ ...valores, rol });
-            // Registro exitoso -> al login para autenticarse con JWT.
-            navigate("/login");
+            const data = await authService.solicitarRegistro({ ...valores, rol });
+            setVerificacion({
+                id: data.verificacion.id_verificacion,
+                destino: data.verificacion.destino_enmascarado,
+                expiraEn: data.verificacion.expira_en_ms,
+                reenviarEnSegundos: data.verificacion.reenviar_disponibles_en,
+                codigoDemo: data.codigo_demo || "",
+            });
+            setPaso(2);
         } catch (error) {
             const data = error?.response?.data;
-            // El backend devuelve { errores: [...] } en fallos de validacion.
-            const lista = data?.errores || [data?.mensaje || "No se pudo completar el registro."];
+            // El backend devuelve { errores: [...] } en fallos de validación.
+            const lista = data?.errores || [data?.mensaje || "No se pudo enviar el código de verificación."];
             setErroresServidor(lista);
         } finally {
             setCargando(false);
         }
     }
 
+    // Paso 2: el código se canjea junto con los datos del formulario; el
+    // backend crea la cuenta solo si ambos son válidos.
+    async function confirmarCodigo(codigo) {
+        await authService.registrar({ ...valores, rol }, verificacion.id, codigo);
+        // Registro exitoso -> al login para autenticarse con JWT.
+        navigate("/login");
+    }
+
+    // Reenvío del mismo código de registro (el cooldown lo decide el
+    // backend; el nombre viaja porque la cuenta aún no existe).
+    function reenviarCodigo() {
+        return authService.reenviarCodigo(verificacion.id, valores.nombre);
+    }
+
+    function volverAlFormulario() {
+        setErroresServidor([]);
+        setPaso(1);
+    }
+
+    // Paso 2: la pantalla de código reutiliza el mismo componente del login.
+    if (paso === 2 && verificacion) {
+        return (
+            <VerificationCodeForm
+                destino={verificacion.destino}
+                nombreCuenta={valores.nombre}
+                codigoDemo={verificacion.codigoDemo}
+                expiraEn={verificacion.expiraEn}
+                reenviarEnSegundos={verificacion.reenviarEnSegundos}
+                onConfirmar={confirmarCodigo}
+                onReenviar={reenviarCodigo}
+                onVolver={volverAlFormulario}
+                textoVolver="Volver al formulario"
+            />
+        );
+    }
+
     return (
-    <form onSubmit={handleSubmit} noValidate>
+    <form onSubmit={solicitarCodigo} noValidate>
       {erroresServidor.length > 0 && (
         <Alert tipo="error" mensaje={erroresServidor.join(" ")} />
       )}
@@ -73,9 +131,9 @@ export default function RegisterForm() {
         <RoleSelector rolSeleccionado={rol} onSelect={setRol} />
       </div>
 
-      <Button tipo="submit" variante="primary" tamano="lg" fullWidth>
-        {cargando ? "Registrando…" : "Registrarse"}
+      <Button tipo="submit" variante="primary" tamano="lg" fullWidth disabled={cargando}>
+        {cargando ? "Enviando código…" : "Continuar"}
       </Button>
     </form>
-  );
+    );
 }

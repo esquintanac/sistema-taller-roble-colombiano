@@ -10,7 +10,7 @@ const ROLES = [
 
 export default function RoleSelector({ rolSeleccionado, onSelect }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+    <div className="grid-2">
       {ROLES.map((r) => (
         <SelectableCard
           key={r.valor}

@@ -18,7 +18,8 @@ export default function SessionExpiredPage() {
         <div style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--error-bg)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 28 }}>⚠</div>
         <h1 style={{ fontSize: 22 }}>Sesión expirada</h1>
         <p style={{ color: "var(--tx-sec)", margin: "10px 0 24px" }}>
-          Tu sesión se cerró automáticamente por 30 minutos de inactividad.
+          Tu sesión se cerró automáticamente tras 30 minutos sin actividad.
+          Vuelve a iniciar sesión para continuar donde ibas.
         </p>
         <Button variante="primary" tamano="lg" fullWidth onClick={handleVolver}>
           Volver a iniciar sesión

@@ -7,10 +7,22 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 export default function ProtectedRoute({ children, rolRequerido }) {
-    const { usuario } = useAuth();
+    const { usuario, sesionExpirada } = useAuth();
 
     if (!usuario) {
-        return <Navigate to="/login" replace />;
+        // El destino depende de POR QUÉ no hay usuario:
+        //  - sesionExpirada = true -> la sesión se cayó sola (inactividad o
+        //    401), así que corresponde /sesion-expirada para explicarlo.
+        //  - sesionExpirada = false -> simplemente no hay sesión (el usuario
+        //    entró directo a la URL), así que va a /login.
+        //
+        // Esto es lo que faltaba: antes SIEMPRE se iba a /login. El temporizador
+        // de inactividad sí navegaba a /sesion-expirada, pero esa navegación
+        // es una transición de baja prioridad en React Router, mientras que
+        // vaciar `usuario` es un update urgente: React aplicaba primero el
+        // urgente, ProtectedRoute redirigía a /login y el usuario nunca veía
+        // la pantalla de sesión expirada. Decidir aquí elimina esa carrera.
+        return <Navigate to={sesionExpirada ? "/sesion-expirada" : "/login"} replace />;
     }
 
     if (rolRequerido && usuario.rol !== rolRequerido) {

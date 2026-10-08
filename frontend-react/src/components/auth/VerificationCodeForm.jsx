@@ -1,10 +1,17 @@
 // src/components/auth/VerificationCodeForm.jsx
-// Segundo factor de autenticación (RNF: seguridad de doble factor).
-// El usuario ya validó usuario/contraseña contra la API, pero la sesión
-// JWT permanece PENDIENTE hasta que ingrese el código de 6 dígitos que
-// simula el envío por SMS. Al verificar, la sesión se activa y se
-// redirige al Panel del Taller (/inicio), que arma sus acciones
-// según el rol del usuario.
+// Paso del código de 6 dígitos (RNF: seguridad). El BACKEND genera, envía
+// por correo y valida el código (VerificacionService); aquí solo se pide,
+// se muestra el destino enmascarado y se captura lo que ingresa el usuario.
+//
+// Se usa en dos flujos:
+//   - Login (sin props): confirma contra /api/auth/verificacion/confirmar/
+//     y, con el código correcto, activa la sesión JWT y entra al panel.
+//   - Registro (con props): el padre (RegisterForm) recibe el código y lo
+//     canjea junto con los datos del formulario en /api/auth/registro/.
+//
+// En desarrollo el backend devuelve además "codigo_demo" (el código que
+// acaba de enviar por el canal de consola); si viene, se muestra para poder
+// probar sin leer la terminal. En producción ese dato no existe.
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -13,21 +20,45 @@ import authService from "../../services/authService";
 import Button from "../ui/Button";
 import Alert from "../ui/Alert";
 
-export default function VerificationCodeForm() {
+export default function VerificationCodeForm({
+  destino: destinoProp,
+  nombreCuenta: nombreProp,
+  codigoDemo: codigoDemoInicial,
+  expiraEn: expiraEnInicial,
+  reenviarEnSegundos = 0,
+  onConfirmar,
+  onReenviar,
+  onVolver,
+  textoVolver = "Volver al login",
+} = {}) {
   const { usuarioPendiente, confirmarSesion, cancelarVerificacion } = useAuth();
   const navigate = useNavigate();
+
+  // Sin props -> flujo de login: los datos salen de la sesión pendiente
+  // que guardó authService durante POST /api/auth/login/.
+  const pendienteInicial = authService.sesionPendiente();
+  const destino = destinoProp ?? pendienteInicial?.destino ?? "";
+  const nombreCuenta = nombreProp ?? usuarioPendiente?.nombre ?? "";
 
   const [codigo, setCodigo] = useState("");
   const [error, setError] = useState("");
   const [aviso, setAviso] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [codigoDemo, setCodigoDemo] = useState(
+    codigoDemoInicial ?? pendienteInicial?.codigoDemo ?? ""
+  );
+  // Expiración del código: la decide el backend (expira_en_ms).
+  const [expiraEn, setExpiraEn] = useState(
+    expiraEnInicial ?? pendienteInicial?.expiraEn ?? 0
+  );
+  // Instante a partir del cual se puede pedir un reenvío (cooldown 60 s).
+  const [puedeReenviarEn, setPuedeReenviarEn] = useState(() =>
+    expiraEnInicial !== undefined
+      ? Date.now() + reenviarEnSegundos * 1000
+      : pendienteInicial?.reenviarDisponibleEn ?? 0
+  );
 
-  // Código "enviado" y su hora de expiración, tomados de la sesión
-  // pendiente que guardó authService durante el login.
-  const pendienteInicial = authService.sesionPendiente();
-  const [codigoDemo, setCodigoDemo] = useState(pendienteInicial?.codigo ?? "");
-  const [expiraEn, setExpiraEn] = useState(pendienteInicial?.expiraEn ?? 0);
-
-  // "tick" fuerza el re-render cada segundo para actualizar el contador.
+  // "tick" fuerza el re-render cada segundo para actualizar los contadores.
   const [, setTick] = useState(0);
   useEffect(() => {
     const temporizador = setInterval(() => setTick((n) => n + 1), 1000);
@@ -39,12 +70,16 @@ export default function VerificationCodeForm() {
   const minutos = Math.floor(restante / 60);
   const segundos = String(restante % 60).padStart(2, "0");
 
+  const esperaReenvio = Math.max(0, Math.ceil((puedeReenviarEn - Date.now()) / 1000));
+  const minutosReenvio = Math.floor(esperaReenvio / 60);
+  const segundosReenvio = String(esperaReenvio % 60).padStart(2, "0");
+
   function handleChange(e) {
     setError("");
     setCodigo(e.target.value.replace(/\D/g, "").slice(0, 6));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setError("");
     setAviso("");
@@ -57,42 +92,80 @@ export default function VerificationCodeForm() {
       setError("Ingresa el código completo de 6 dígitos.");
       return;
     }
-    if (!authService.verificarCodigo(codigo)) {
-      setError("Código incorrecto. Verifica el número e inténtalo de nuevo.");
-      return;
-    }
 
-    // Código correcto: se activa la sesión JWT y se entra directamente
-    // al Panel del Taller. HomePage ya arma las tarjetas según el rol,
-    // así que no hace falta decidir la ruta aquí. El tutorial queda
-    // disponible desde el Header y desde el propio panel, por si el
-    // usuario quiere repasarlo.
-    const usuario = confirmarSesion();
-    if (!usuario) {
-      // Si la sesión pendiente se perdió (por ejemplo, se venció el
-      // código justo al confirmar), NO se navega a ciegas: una ruta
-      // protegida con el usuario en null rebotaría a /login y el usuario
-      // no sabría por qué.
-      setError("La sesión de verificación se perdió. Vuelve a iniciar sesión.");
-      return;
+    setEnviando(true);
+    try {
+      if (onConfirmar) {
+        // Flujo de registro: el padre canjea el código junto a los datos
+        // del formulario (el backend los consume en un solo paso).
+        await onConfirmar(codigo);
+      } else {
+        // Flujo de login: el backend valida el código y solo entonces
+        // devuelve los tokens; con ellos se activa la sesión.
+        await confirmarSesion(codigo);
+        // Se entra directo al Panel del Taller; HomePage ya arma las
+        // tarjetas según el rol, así que no hace falta decidir la ruta.
+        navigate("/inicio", { replace: true });
+      }
+    } catch (err) {
+      // El mensaje del backend distingue: código incorrecto (con los
+      // intentos que quedan), expirado, bloqueado o sesión perdida. El
+      // registro devuelve la lista en "errores" en lugar de "mensaje".
+      const data = err?.response?.data;
+      setError(
+        data?.mensaje ||
+          (Array.isArray(data?.errores) ? data.errores.join(" ") : "") ||
+          err?.message ||
+          "No se pudo verificar el código. Intenta de nuevo."
+      );
+      setCodigo("");
+    } finally {
+      setEnviando(false);
     }
-    navigate("/inicio", { replace: true });
   }
 
-  function handleReenviar() {
-    const nuevo = authService.reenviarCodigo();
-    if (!nuevo) {
-      setError("La sesión de verificación se perdió. Inicia sesión nuevamente.");
-      return;
-    }
-    setCodigo("");
+  async function handleReenviar() {
+    if (esperaReenvio > 0 || enviando) return;
     setError("");
-    setCodigoDemo(nuevo.codigo);
-    setExpiraEn(nuevo.expiraEn);
-    setAviso("Se envió un nuevo código a tu teléfono.");
+    setAviso("");
+    setEnviando(true);
+    try {
+      const datos = onReenviar ? await onReenviar() : await authService.reenviarCodigo();
+      if (!datos?.verificacion) {
+        setError("La sesión de verificación se perdió. Vuelve a iniciar el proceso.");
+        return;
+      }
+      const { verificacion } = datos;
+      setCodigo("");
+      setCodigoDemo(datos.codigo_demo || "");
+      setExpiraEn(verificacion.expira_en_ms);
+      setPuedeReenviarEn(
+        Date.now() + (verificacion.reenviar_disponibles_en || 0) * 1000
+      );
+      if (verificacion.reenviar_disponibles_en > 0) {
+        // El cooldown del servidor manda: NO se envió otro correo.
+        setAviso(
+          `Aún no puedes pedir otro código: espera ${verificacion.reenviar_disponibles_en} segundos.`
+        );
+      } else {
+        setAviso("Se envió un nuevo código a tu correo.");
+      }
+    } catch (err) {
+      setError(
+        err?.response?.data?.mensaje ||
+          err?.message ||
+          "No se pudo reenviar el código. Intenta de nuevo."
+      );
+    } finally {
+      setEnviando(false);
+    }
   }
 
   function handleVolver() {
+    if (onVolver) {
+      onVolver();
+      return;
+    }
     cancelarVerificacion();
     navigate("/login");
   }
@@ -103,10 +176,10 @@ export default function VerificationCodeForm() {
         tipo="info"
         mensaje={
           <>
-            Código enviado al número <strong>+57 ****** 5896</strong>
-            {usuarioPendiente?.nombre && (
+            Código enviado al correo <strong>{destino}</strong>
+            {nombreCuenta && (
               <>
-                , cuenta de <strong>{usuarioPendiente.nombre}</strong>
+                , cuenta de <strong>{nombreCuenta}</strong>
               </>
             )}
           </>
@@ -148,15 +221,21 @@ export default function VerificationCodeForm() {
         )}
       </p>
 
-      <Button tipo="submit" variante="primary" tamano="lg" fullWidth disabled={expirado}>
-        Verificar código
+      <Button
+        tipo="submit"
+        variante="primary"
+        tamano="lg"
+        fullWidth
+        disabled={expirado || enviando}
+      >
+        {enviando ? "Verificando…" : "Verificar código"}
       </Button>
 
-      {/* Modo demostración: como no hay una pasarela SMS real, se muestra
-          el código generado para que el flujo pueda probarse. */}
+      {/* Modo demostración: solo cuando el BACKEND informa el código que
+          envió (DEBUG=True, canal de consola). En producción no existe. */}
       {codigoDemo && (
         <p style={{ textAlign: "center", fontSize: 12, color: "var(--tx-muted)", marginTop: 14 }}>
-          Modo demostración — código enviado:{" "}
+          Modo demostración — el backend envió a tu correo:{" "}
           <strong style={{ letterSpacing: 2, color: "var(--tx-sec)" }}>{codigoDemo}</strong>
         </p>
       )}
@@ -175,14 +254,25 @@ export default function VerificationCodeForm() {
           onClick={handleVolver}
           style={{ background: "none", border: "none", color: "var(--tx-sec)", cursor: "pointer", padding: 0 }}
         >
-          Volver al login
+          {textoVolver}
         </button>
         <button
           type="button"
           onClick={handleReenviar}
-          style={{ background: "none", border: "none", color: "var(--primary)", fontWeight: 700, cursor: "pointer", padding: 0 }}
+          disabled={esperaReenvio > 0 || enviando}
+          style={{
+            background: "none",
+            border: "none",
+            color: esperaReenvio > 0 ? "var(--tx-sec)" : "var(--primary)",
+            fontWeight: 700,
+            cursor: esperaReenvio > 0 ? "not-allowed" : "pointer",
+            padding: 0,
+            opacity: esperaReenvio > 0 ? 0.7 : 1,
+          }}
         >
-          Reenviar código
+          {esperaReenvio > 0
+            ? `Reenviar en ${minutosReenvio}:${segundosReenvio}`
+            : "Reenviar código"}
         </button>
       </div>
     </form>

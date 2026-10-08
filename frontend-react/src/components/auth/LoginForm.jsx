@@ -3,7 +3,7 @@
 // credenciales incorrectas (RF1, RF7, HU-01).
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import authService from "../../services/authService";
 import FormField from "../ui/FormField";
@@ -39,7 +39,8 @@ export default function LoginForm() {
     try {
       await authService.login(valores.usuario, valores.contrasena);
       // Las credenciales son correctas, pero la sesión todavía NO se
-      // activa: queda pendiente del código SMS (segundo factor, RNF).
+      // activa: el backend envió el código de verificación al correo y
+      // los tokens recién llegan al confirmarlo (segundo factor, RNF).
       iniciarVerificacion();
       navigate("/verificacion");
     } catch (error) {
@@ -76,6 +77,10 @@ export default function LoginForm() {
         requerido
         placeholder="••••••••"
       />
+
+      <Link to="/recuperar-contrasena" className="auth-forgot">
+        ¿Olvidaste tu contraseña?
+      </Link>
 
       <Button tipo="submit" variante="primary" tamano="lg" fullWidth>
         {cargando ? "Ingresando…" : "Iniciar sesión"}

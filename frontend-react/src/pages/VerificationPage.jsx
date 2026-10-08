@@ -1,7 +1,8 @@
 // src/pages/VerificationPage.jsx
 // Pantalla del segundo factor de autenticación (RNF de seguridad).
 // Solo es accesible cuando el usuario ya validó usuario/contraseña y
-// su sesión quedó pendiente de confirmar el código enviado por SMS.
+// su sesión quedó pendiente de confirmar el código de 6 dígitos que el
+// backend envió a su correo.
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import VerificationCodeForm from "../components/auth/VerificationCodeForm";
