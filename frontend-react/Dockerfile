@@ -1,13 +1,16 @@
-# frontend-react/Dockerfile
-FROM node:20-alpine
-
+# Etapa de compilación
+FROM node:20-alpine AS builder
 WORKDIR /app
-
 COPY package*.json ./
 RUN npm install
-
 COPY . .
+RUN npm run build
 
-EXPOSE 5173
+# Etapa de producción
+FROM node:20-alpine
+WORKDIR /app
+RUN npm install -g serve
+COPY --from=builder /app/dist /app/dist
 
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+EXPOSE 3000
+CMD ["sh", "-c", "serve -s dist -l ${PORT:-3000}"]
