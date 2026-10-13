@@ -16,7 +16,7 @@ const api = axios.create({
     // Sin esta variable en producción, el navegador intentaría llamar a
     // 127.0.0.1:8000 (la máquina del visitante) y TODAS las peticiones
     // fallarían con error de red.
-    baseURL: import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api",
+    baseURL: import.meta.env.VITE_API_URL || 'https://prolific-grace-production.up.railway.app/api/',
     headers: { "Content-Type": "application/json" },
 });
 
