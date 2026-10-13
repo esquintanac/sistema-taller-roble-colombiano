@@ -60,9 +60,10 @@ MAX_INTENTOS = 5
 # Segundos mínimos entre emisiones para el mismo (proposito, destino).
 COOLDOWN_SEGUNDOS = 60
 
-# Origen del frontend React en desarrollo; debe coincidir con los puertos
-# permitidos en CORS_ALLOWED_ORIGINS de settings.py.
-URL_BASE_FRONTEND = "http://localhost:5173"
+# URL base del frontend para los enlaces de restablecer contraseña. Viene de
+# settings.py para que en producción (Railway) el enlace apunte al dominio
+# real del frontend y no al localhost del servidor (URL_BASE_FRONTEND).
+URL_BASE_FRONTEND = settings.URL_BASE_FRONTEND
 
 # Propósitos y su formato de artefacto.
 PROPOSITOS = ("login", "registro", "recuperacion")

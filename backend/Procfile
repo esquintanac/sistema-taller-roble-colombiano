@@ -1,0 +1,5 @@
+# backend/Procfile
+# Arranque del backend para plataformas que no usan el Dockerfile
+# (por ejemplo el detector de Nixpacks de Railway): gunicorn sirviendo
+# config.wsgi en el puerto que asigna la plataforma ($PORT).
+web: gunicorn config.wsgi --bind 0.0.0.0:$PORT --workers 2 --timeout 120

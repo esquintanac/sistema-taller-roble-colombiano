@@ -49,12 +49,25 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-nm%ayak(@hh4tk)i5=c^6^6=@@ipu!yj*=z8w4zy)k$%-(o=g9'
+# En desarrollo vale la clave por defecto; en producción (Railway) se
+# sobreescribe con la variable de entorno SECRET_KEY (nunca se sube a Git).
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
+    'django-insecure-nm%ayak(@hh4tk)i5=c^6^6=@@ipu!yj*=z8w4zy)k$%-(o=g9',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Por defecto True para desarrollo local; en Railway se pone DEBUG=False.
+DEBUG = os.environ.get('DEBUG', 'True').lower() in ('1', 'true', 'si', 'yes')
 
-ALLOWED_HOSTS = ['.railway.app', 'localhost', '127.0.0.1']
+# .railway.app cubre cualquier servicio desplegado en Railway (todos los
+# dominios terminan en .up.railway.app). Orígenes extra (dominios propios,
+# etc.) se agregan con la variable ALLOWED_HOSTS separada por comas.
+ALLOWED_HOSTS = ['.railway.app', 'localhost', '127.0.0.1'] + [
+    host.strip()
+    for host in os.environ.get('ALLOWED_HOSTS', '').split(',')
+    if host.strip()
+]
 
 
 # Application definition
@@ -98,6 +111,15 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5174",
 ]
 
+# Orígenes extra para producción (separados por comas). En Railway, por
+# ejemplo:
+#   CORS_ALLOWED_ORIGINS_EXTRA=https://prolific-grace-production.up.railway.app
+CORS_ALLOWED_ORIGINS += [
+    origen.strip()
+    for origen in os.environ.get('CORS_ALLOWED_ORIGINS_EXTRA', '').split(',')
+    if origen.strip()
+]
+
 REST_FRAMEWORK = {
     #'DEFAULT_AUTHENTICATION_CLASSES': (
     #   'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -130,14 +152,19 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
+# En desarrollo local se usan las variables DB_* (o los valores por defecto).
+# En Railway el plugin MySQL publica MYSQLDATABASE / MYSQLUSER /
+# MYSQLPASSWORD / MYSQLHOST / MYSQLPORT, así que cada parámetro cae a esas
+# variables cuando DB_* no existe: el mismo settings.py sirve para local y
+# para producción sin tocar el código.
 DATABASES = {
     'default': {
         'ENGINE': 'mysql.connector.django',
-        'NAME': os.environ.get('DB_NAME', 'mydb'),
-        'USER': os.environ.get('DB_USER', 'root'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'admin'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': '3306',
+        'NAME': os.environ.get('DB_NAME') or os.environ.get('MYSQLDATABASE') or 'mydb',
+        'USER': os.environ.get('DB_USER') or os.environ.get('MYSQLUSER') or 'root',
+        'PASSWORD': os.environ.get('DB_PASSWORD') or os.environ.get('MYSQLPASSWORD') or 'admin',
+        'HOST': os.environ.get('DB_HOST') or os.environ.get('MYSQLHOST') or 'localhost',
+        'PORT': os.environ.get('DB_PORT') or os.environ.get('MYSQLPORT') or '3306',
     }
 }
 
@@ -188,27 +215,43 @@ SIMPLE_JWT = {
 }
 
 
-# Correo electrónico (recuperación de contraseña).
-# Django no exige configurar EMAIL_BACKEND: si falta, usa el backend de
-# consola, que imprime el mensaje en la terminal del servidor. Así, en
-# desarrollo el enlace de recuperación se ve sin credenciales SMTP.
+# Correo electrónico (login, registro y recuperación de contraseña).
+# En desarrollo (sin EMAIL_HOST) se usa el backend de consola: el mensaje
+# se imprime en la terminal del servidor y no se toca el código.
 # Para enviar correos reales (Brevo, Gmail con contraseña de aplicación,
-# etc.) basta con descomentar el bloque inferior y no tocar el código.
+# etc.) basta con definir EMAIL_HOST y sus credenciales como variables de
+# entorno; en Railway van en la configuración del servicio del backend.
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'no-responder@tallerdelroble.com'
+DEFAULT_FROM_EMAIL = os.environ.get(
+    'DEFAULT_FROM_EMAIL', 'no-responder@tallerdelroble.com'
+)
 
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'smtp-relay.brevo.com'
-# EMAIL_PORT = 587
-# EMAIL_HOST_USER = ''        # usuario SMTP (clave API, por ejemplo)
-# EMAIL_HOST_PASSWORD = ''    # contraseña/clave SMTP
-# EMAIL_USE_TLS = True
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+if EMAIL_HOST:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+    EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in (
+        '1', 'true', 'si', 'yes',
+    )
+    # Evita que el proceso se cuelque si el proveedor SMTP no responde
+    # (en Railway un proceso colgado termina en timeout del servicio).
+    EMAIL_TIMEOUT = 15
 
 # Canal de envío de códigos de verificación (login, registro, recuperación).
 # El motor (verificacion_service.py) no depende del canal: elegirlo es
 # configuración. 'correo' funciona hoy con el backend de consola/SMTP de
 # arriba; 'sms' usa el adaptador preparado de canales_envio.py.
-CANAL_VERIFICACION = 'correo'
+CANAL_VERIFICACION = os.environ.get('CANAL_VERIFICACION', 'correo')
+
+# URL base del frontend para los enlaces que viajan por correo (por ejemplo
+# el enlace de restablecer contraseña:
+# {URL_BASE_FRONTEND}/restablecer/<token>). En desarrollo es el dev server
+# de Vite; en producción se define con la variable URL_BASE_FRONTEND
+# (p. ej. https://<servicio-del-frontend>.up.railway.app) para que el
+# enlace apunte al dominio real y no al localhost del servidor.
+URL_BASE_FRONTEND = os.environ.get('URL_BASE_FRONTEND', 'http://localhost:5173')
 
 # --- Canal SMS (preparado, sin credenciales) ---
 # Para activarlo en el futuro: completar estas variables, poner

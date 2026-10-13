@@ -6,9 +6,17 @@ import axios from "axios";
 import { CLAVES_SESION } from "./clavesSesion";
 
 const api = axios.create({
-    // Backend Django en desarrollo: http por defecto en el puerto 8000,
-    // y la API montada bajo el prefijo /api (ver backend/config/urls.py).
-    baseURL: "http://127.0.0.1:8000/api",
+    // Backend Django, con la API montada bajo el prefijo /api (ver
+    // backend/config/urls.py).
+    // En desarrollo (runserver) escucha en el puerto 8000 de la máquina
+    // local, que es el valor por defecto. En producción (Railway, por
+    // ejemplo) la URL del backend cambia, así que se configura con la
+    // variable de entorno VITE_API_URL del servicio del frontend:
+    //   VITE_API_URL=https://<servicio-del-backend>.up.railway.app/api
+    // Sin esta variable en producción, el navegador intentaría llamar a
+    // 127.0.0.1:8000 (la máquina del visitante) y TODAS las peticiones
+    // fallarían con error de red.
+    baseURL: import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api",
     headers: { "Content-Type": "application/json" },
 });
 
