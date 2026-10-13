@@ -300,7 +300,10 @@ class VerificacionService:
                         # El fallo del canal lo interpreta cada flujo (en
                         # recuperación la respuesta debe seguir siendo
                         # genérica); aquí solo queda constancia en el log.
-                        print(f"[verificacion] {error}")
+                        # flush=True: en el contenedor el stdout va con
+                        # buffer de bloque y sin esto el mensaje jamás
+                        # llega a los logs del servidor.
+                        print(f"[verificacion] {error}", flush=True)
 
                 hilo_envio = threading.Thread(target=_entregar, daemon=True)
                 hilo_envio.start()

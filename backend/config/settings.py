@@ -232,9 +232,24 @@ if EMAIL_HOST:
     EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
     EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-    EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in (
-        '1', 'true', 'si', 'yes',
-    )
+    # TLS implícito (SSL al conectar) en el 465 y STARTTLS en el resto
+    # (587): Django distingue EMAIL_USE_SSL de EMAIL_USE_TLS, y hablar
+    # STARTTLS contra el 465 deja la conexión colgada hasta el timeout
+    # (Gmail espera el handshake TLS desde el primer byte). El puerto
+    # manda salvo que el entorno lo fuerce con EMAIL_USE_SSL/EMAIL_USE_TLS.
+    _ssl_env = os.environ.get('EMAIL_USE_SSL')
+    if _ssl_env is not None:
+        EMAIL_USE_SSL = _ssl_env.lower() in ('1', 'true', 'si', 'yes')
+    else:
+        EMAIL_USE_SSL = EMAIL_PORT == 465
+    _tls_env = os.environ.get('EMAIL_USE_TLS')
+    if _tls_env is not None:
+        EMAIL_USE_TLS = _tls_env.lower() in ('1', 'true', 'si', 'yes')
+    elif EMAIL_USE_SSL:
+        # SSL implícito y STARTTLS no conviven en la misma conexión.
+        EMAIL_USE_TLS = False
+    else:
+        EMAIL_USE_TLS = True
     # Evita que el proceso se cuelque si el proveedor SMTP no responde
     # (en Railway un proceso colgado termina en timeout del servicio).
     EMAIL_TIMEOUT = 15
