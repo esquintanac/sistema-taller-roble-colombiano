@@ -231,11 +231,14 @@ export default function VerificationCodeForm({
         {enviando ? "Verificando…" : "Verificar código"}
       </Button>
 
-      {/* Modo demostración: solo cuando el BACKEND informa el código que
-          envió (DEBUG=True, canal de consola). En producción no existe. */}
+      {/* Modo demostración: solo cuando el BACKEND informa el código
+          (DEBUG=True). En este entorno el canal de correo está pendiente
+          (el SMTP saliente del despliegue está bloqueado), así que el
+          código se muestra aquí para poder continuar sin leer la terminal.
+          Con DEBUG=False este dato jamás viaja. */}
       {codigoDemo && (
         <p style={{ textAlign: "center", fontSize: 12, color: "var(--tx-muted)", marginTop: 14 }}>
-          Modo demostración — el backend envió a tu correo:{" "}
+          Modo demostración — canal de correo pendiente en este entorno; tu código:{" "}
           <strong style={{ letterSpacing: 2, color: "var(--tx-sec)" }}>{codigoDemo}</strong>
         </p>
       )}

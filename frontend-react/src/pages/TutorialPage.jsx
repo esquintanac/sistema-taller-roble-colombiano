@@ -19,7 +19,7 @@ const PASOS = [
     descripcion:
       "Entra con tu usuario y contraseña. En la pantalla siguiente te piden un código de 6 dígitos, válido por 5 minutos, que llega a tu correo registrado: recién cuando lo confirmas se abre el Panel del Taller. Tienes 5 intentos antes de que el código quede bloqueado y puedes pedir un reenvío cada minuto.",
     consejo:
-      "¿Olvidaste la contraseña? En el login usa «¿Olvidaste tu contraseña?»: recibirás un enlace por correo para crear una nueva, que sirve una sola vez y vence a los 30 minutos.",
+      "¿Olvidaste la contraseña? En el login usa «¿Olvidaste tu contraseña?»: recibirás un enlace por correo para crear una nueva, que sirve una sola vez y vence a los 30 minutos. En este entorno de demostración el canal de correo está pendiente: el código de verificación y el enlace se muestran en pantalla para que puedas continuar.",
   },
   {
     icono: "📋",

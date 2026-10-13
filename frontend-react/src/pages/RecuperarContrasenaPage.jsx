@@ -71,7 +71,7 @@ export default function RecuperarContrasenaPage() {
                 <Alert
                   tipo="info"
                   titulo="Modo demostración"
-                  mensaje="El servidor de correo solo imprime los mensajes en su terminal. Puedes abrir el enlace directamente desde aquí:"
+                  mensaje="Modo demostración: el canal de correo está pendiente en este entorno (el SMTP saliente del despliegue está bloqueado). Puedes abrir el enlace directamente desde aquí:"
                 />
                 <Link className="btn btn-primary btn-full" to={rutaEnlaceDemo}>
                   Abrir enlace de recuperación
