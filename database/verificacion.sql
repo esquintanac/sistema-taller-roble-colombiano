@@ -43,6 +43,6 @@ CREATE TABLE IF NOT EXISTS verificacion (
     KEY idx_proposito_destino (proposito, destino),
     KEY idx_valor_hash (valor_hash),
     CONSTRAINT fk_verificacion_usuario
-        FOREIGN KEY (id_usuario) REFERENCES Usuario (id_usuario)
+        FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario)
         ON DELETE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;

@@ -20,6 +20,6 @@ CREATE TABLE IF NOT EXISTS token_recuperacion (
     PRIMARY KEY (id_token),
     KEY idx_token_hash (token_hash),
     CONSTRAINT fk_token_recuperacion_usuario
-        FOREIGN KEY (id_usuario) REFERENCES Usuario (id_usuario)
+        FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario)
         ON DELETE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;

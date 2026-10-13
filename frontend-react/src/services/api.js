@@ -9,14 +9,17 @@ const api = axios.create({
     // Backend Django, con la API montada bajo el prefijo /api (ver
     // backend/config/urls.py).
     // En desarrollo (runserver) escucha en el puerto 8000 de la máquina
-    // local, que es el valor por defecto. En producción (Railway, por
-    // ejemplo) la URL del backend cambia, así que se configura con la
-    // variable de entorno VITE_API_URL del servicio del frontend:
-    //   VITE_API_URL=https://<servicio-del-backend>.up.railway.app/api
-    // Sin esta variable en producción, el navegador intentaría llamar a
-    // 127.0.0.1:8000 (la máquina del visitante) y TODAS las peticiones
-    // fallarían con error de red.
-    baseURL: import.meta.env.VITE_API_URL || 'https://prolific-grace-production.up.railway.app/api/',
+    // local, que es el valor por defecto. En producción (Railway) se
+    // configura con la variable de entorno VITE_API_URL del servicio del
+    // frontend. Como respaldo —por si la variable no está definida— se
+    // usa la URL pública del SERVICIO DEL BACKEND en producción y la del
+    // servidor local en desarrollo; nunca la del propio frontend, porque
+    // el navegador se llamaría a sí mismo y todas las peticiones
+    // fallarían con 404/405.
+    baseURL: import.meta.env.VITE_API_URL
+        || (import.meta.env.PROD
+            ? "https://sgidg-taller-roble-colombiano.up.railway.app/api"
+            : "http://127.0.0.1:8000/api"),
     headers: { "Content-Type": "application/json" },
 });
 

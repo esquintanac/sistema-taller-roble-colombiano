@@ -2,11 +2,19 @@
 Modelo de datos del Usuario.
 Ruta: backend/api/models_api/usuario_model.py
 
-Se mapea directamente sobre la tabla 'Usuario' que ya existe en MySQL
+Se mapea directamente sobre la tabla 'usuario' que ya existe en MySQL
 (creada en el script SQL de la evidencia del modelo relacional).
 managed = False le indica a Django que NO debe crear ni modificar esta
 tabla — solo la usa para leer y escribir, porque ya existe y ya tiene
 datos reales.
+
+Nota de despliegue: el nombre de la tabla es 'usuario' en minúsculas.
+En Windows (lower_case_table_names=1) el sistema de archivos ignora las
+mayúsculas, pero en Linux (como el contenedor de Railway) 'Usuario' y
+'usuario' son tablas DISTINTAS: usar mayúsculas en producción falla con
+ProgrammingError: Table 'railway.Usuario' doesn't exist. El db_table
+debe coincidir exactamente con el dump (taller_roble_backup.sql crea
+`usuario`).
 """
 
 from django.db import models
@@ -24,7 +32,7 @@ class Usuario(models.Model):
 
     class Meta:
         managed = False           # Django no crea/modifica esta tabla
-        db_table = "Usuario"      # Nombre exacto de la tabla en MySQL
+        db_table = "usuario"      # Nombre exacto en el dump; en Linux SÍ distingue mayúsculas
 
     def __str__(self):
         return f"{self.nombre} {self.apellido} ({self.usuario})"
