@@ -41,6 +41,7 @@ producción esos campos jamás viajan.
 
 import hashlib
 import secrets
+import threading
 from datetime import timedelta
 
 from django.conf import settings
@@ -59,6 +60,13 @@ MAX_INTENTOS = 5
 
 # Segundos mínimos entre emisiones para el mismo (proposito, destino).
 COOLDOWN_SEGUNDOS = 60
+
+# Segundos que emitir() espera al canal antes de seguir sin él. El envío
+# corre en un hilo: si el proveedor responde dentro de este plazo se
+# conoce el resultado real (un fallo definitivo puede devolver 502);
+# si no, la respuesta HTTP no se bloquea a la espera de un SMTP
+# posiblemente caído (en producción se midieron ~15 s por request).
+ESPERA_ENVIO_SEGUNDOS = 2
 
 # URL base del frontend para los enlaces de restablecer contraseña. Viene de
 # settings.py para que en producción (Railway) el enlace apunte al dominio
@@ -272,14 +280,37 @@ class VerificacionService:
                     asunto, texto, html = _contenido_enlace(
                         nombre, _construir_enlace(valor)
                     )
-                try:
-                    canal_activo().enviar(destino, asunto, texto, html)
-                    enviado = True
-                except ErrorDeCanal as error:
-                    # El fallo del canal lo interpreta cada flujo (en
-                    # recuperación la respuesta debe seguir siendo genérica);
-                    # aquí solo queda constancia en el servidor.
-                    print(f"[verificacion] {error}")
+                # El envío corre en un hilo con espera acotada: la
+                # respuesta HTTP no debe bloquearse a la espera del
+                # proveedor de correo. Un SMTP caído o lento retrasaría
+                # el login/registro el timeout completo (se midieron ~15 s
+                # en producción); con este tope la petición responde como
+                # máximo en ESPERA_ENVIO_SEGUNDOS. Si el canal termina
+                # dentro del plazo se conoce el resultado real (un fallo
+                # definitivo puede devolver 502); si no, el hilo sigue en
+                # segundo plano y aquí se asume envío en curso: cualquier
+                # fallo definitivo quedará impreso en el log del servidor.
+                resultado_envio = {}
+
+                def _entregar():
+                    try:
+                        canal_activo().enviar(destino, asunto, texto, html)
+                        resultado_envio["enviado"] = True
+                    except ErrorDeCanal as error:
+                        # El fallo del canal lo interpreta cada flujo (en
+                        # recuperación la respuesta debe seguir siendo
+                        # genérica); aquí solo queda constancia en el log.
+                        print(f"[verificacion] {error}")
+
+                hilo_envio = threading.Thread(target=_entregar, daemon=True)
+                hilo_envio.start()
+                hilo_envio.join(timeout=ESPERA_ENVIO_SEGUNDOS)
+                # Terminó con error -> False (puede 502); sigue vivo ->
+                # True optimista: la respuesta no espera al canal.
+                enviado = (
+                    bool(resultado_envio.get("enviado"))
+                    or hilo_envio.is_alive()
+                )
 
         resultado = {
             "id_verificacion": registro.id_verificacion,

@@ -41,8 +41,12 @@ class CanalCorreo:
             )
         except Exception as error:
             # La capa superior decide qué hacer con el fallo (por ejemplo en
-            # recuperación responder igual por la regla de no enumerar).
-            raise ErrorDeCanal(f"No se pudo enviar el correo a {destino}") from error
+            # recuperación responder igual por la regla de no enumerar). La
+            # causa raíz viaja en el mensaje: sin ella los logs del servidor
+            # no dicen POR QUÉ falló el SMTP (auth rechazada, timeout, etc.).
+            raise ErrorDeCanal(
+                f"No se pudo enviar el correo a {destino}: {error}"
+            ) from error
 
 
 class CanalSMS:

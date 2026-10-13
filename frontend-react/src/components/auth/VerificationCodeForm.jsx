@@ -137,7 +137,7 @@ export default function VerificationCodeForm({
       }
       const { verificacion } = datos;
       setCodigo("");
-      setCodigoDemo(datos.codigo_demo || "");
+      setCodigoDemo((prev) => datos.codigo_demo || prev);
       setExpiraEn(verificacion.expira_en_ms);
       setPuedeReenviarEn(
         Date.now() + (verificacion.reenviar_disponibles_en || 0) * 1000

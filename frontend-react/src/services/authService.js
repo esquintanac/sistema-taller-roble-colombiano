@@ -227,10 +227,16 @@ const authService = {
       nombre,
     });
     // En el flujo de login la pendiente vive aquí: se refresca con los
-    // tiempos nuevos (el id se mantiene estable entre reenvíos).
+    // tiempos nuevos (el id se mantiene estable entre reenvíos). Si la
+    // respuesta viene en cooldown (sin codigo_demo) se conserva el
+    // código anterior: sigue siendo el mismo artefacto vigente.
     const pendiente = authService.sesionPendiente();
     if (pendiente) {
-      authService.guardarPendiente(data.verificacion, pendiente.usuario, data.codigo_demo);
+      authService.guardarPendiente(
+        data.verificacion,
+        pendiente.usuario,
+        data.codigo_demo || pendiente.codigoDemo,
+      );
     }
     return data;
   },
