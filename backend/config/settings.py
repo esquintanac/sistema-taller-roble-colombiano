@@ -259,6 +259,25 @@ if EMAIL_HOST:
     # (en Railway un proceso colgado termina en timeout del servicio).
     EMAIL_TIMEOUT = 15
 
+# --- Correo por API HTTP (Brevo) ---
+# Railway bloquea el SMTP saliente (puertos 25/465/587) por defecto
+# ([Errno 101] Network is unreachable); el tráfico HTTPS del puerto 443
+# sí tiene salida. Si BREVO_API_KEY está definida, canales_envio.py
+# entrega los códigos por la API de Brevo en lugar del SMTP. Cuenta
+# gratuita: https://brevo.com (300 correos/día). BREVO_FROM_EMAIL debe
+# ser un remitente verificado en Brevo (el correo de la propia cuenta
+# viene verificado al confirmarlo).
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '')
+BREVO_API_URL = os.environ.get(
+    'BREVO_API_URL', 'https://api.brevo.com/v3/smtp/email'
+)
+BREVO_FROM_EMAIL = (
+    os.environ.get('BREVO_FROM_EMAIL', '') or DEFAULT_FROM_EMAIL
+)
+BREVO_FROM_NAME = os.environ.get(
+    'BREVO_FROM_NAME', 'Taller del Roble Colombiano'
+)
+
 # Canal de envío de códigos de verificación (login, registro, recuperación).
 # El motor (verificacion_service.py) no depende del canal: elegirlo es
 # configuración. 'correo' funciona hoy con el backend de consola/SMTP de
