@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { MINUTOS_INACTIVIDAD } from "../config/sesion";
 import TutorialProgressBar from "../components/tutorial/TutorialProgressBar";
 import TutorialStepCard from "../components/tutorial/TutorialStepCard";
 import Button from "../components/ui/Button";
@@ -71,8 +72,7 @@ const PASOS_ADMIN = [
     icono: "🔐",
     titulo: "Tu sesión, protegida",
     pantalla: "Login → Verificación de seguridad",
-    descripcion:
-      "El acceso combina usuario y contraseña con el código de 6 dígitos que llega a tu correo, válido por 5 minutos. Si pasas 30 minutos sin actividad, el sistema cierra la sesión por seguridad; 5 minutos antes aparece un aviso con cuenta regresiva para que puedas continuar.",
+    descripcion: `El acceso combina usuario y contraseña con el código de 6 dígitos que llega a tu correo, válido por 5 minutos. Si pasas ${MINUTOS_INACTIVIDAD} minutos sin actividad, el sistema cierra la sesión por seguridad; 5 minutos antes aparece un aviso con cuenta regresiva para que puedas continuar.`,
     consejo:
       "En el aviso pulsa «Extender sesión» las veces que necesites. Si olvidaste la contraseña, usa «¿Olvidaste tu contraseña?» en el login: recibirás un enlace por correo, de un solo uso y válido por 30 minutos.",
   },

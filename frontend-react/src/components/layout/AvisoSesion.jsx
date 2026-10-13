@@ -21,6 +21,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { MINUTOS_INACTIVIDAD } from "../../config/sesion";
 import Button from "../ui/Button";
 
 export default function AvisoSesion() {
@@ -77,8 +78,8 @@ export default function AvisoSesion() {
         </h2>
 
         <p id="aviso-sesion-texto" className="modal-aviso-texto">
-          Por seguridad, cerramos la sesión tras 30 minutos sin actividad.
-          ¿Quieres seguir conectado?
+          Por seguridad, cerramos la sesión tras {MINUTOS_INACTIVIDAD} minutos
+          sin actividad. ¿Quieres seguir conectado?
         </p>
 
         <p className="modal-aviso-contador" aria-live="polite">

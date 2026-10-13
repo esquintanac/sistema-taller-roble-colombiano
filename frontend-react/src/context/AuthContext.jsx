@@ -12,29 +12,13 @@ import authService from "../services/authService";
 // refrescarSesion se usa al pulsar "Extender sesión": además de reiniciar el
 // plazo de inactividad, conviene que el JWT se renueve en ese momento.
 import { refrescarSesion } from "../services/api";
+// RNF (cierre de sesión por inactividad): el plazo y el aviso previo viven en
+// src/config/sesion.js para que el temporizador y los textos que ve el usuario
+// (modal de aviso, pantalla de sesión expirada, tutoriales) hablen siempre del
+// mismo número y no se desincronicen.
+import { TIEMPO_INACTIVIDAD_MS, TIEMPO_AVISO_MS } from "../config/sesion";
 
 const AuthContext = createContext(null);
-
-// RNF (cierre de sesión por inactividad): si el usuario deja de interactuar
-// con el sistema durante 30 minutos, la sesión se cierra sola y se lleva a
-// la pantalla /sesion-expirada. Se usa el mismo valor que la vigencia del
-// access token del backend (SIMPLE_JWT.ACCESS_TOKEN_LIFETIME = 30 min en
-// config/settings.py) para que ambos límites hablen del mismo tiempo.
-//
-// Para probar el flujo sin esperar media hora no hay que editar este
-// archivo: basta crear un .env.local (en milisegundos) y reiniciar Vite.
-//   VITE_INACTIVIDAD_MS=15000
-// Se declara local (sin export) porque solo lo usa este archivo: exportarlo
-// hacía que el linter marcara un segundo aviso de "only-export-components".
-const TIEMPO_INACTIVIDAD_MS =
-  Number(import.meta.env.VITE_INACTIVIDAD_MS) || 30 * 60 * 1000;
-
-// Cuánto antes del cierre se avisa al usuario. Se toma el menor entre 5
-// minutos y el 20 % del temporizador: con los 30 min reales da exactamente
-// los 5 minutos buscados, pero al probar con VITE_INACTIVIDAD_MS=20000 el
-// aviso aparece a los 4 segundos y se puede ver el flujo completo sin
-// esperar media hora.
-const TIEMPO_AVISO_MS = Math.min(5 * 60 * 1000, TIEMPO_INACTIVIDAD_MS * 0.2);
 
 // Interacciones que cuentan como "el usuario sigue trabajando".
 const EVENTOS_ACTIVIDAD = [
@@ -172,7 +156,7 @@ export function AuthProvider({ children }) {
     setAvisoSesion(null);
     ultimaActividad.current = Date.now();
     // Reinicia los dos temporizadores (aviso y cierre), con lo que el usuario
-    // recupera otros 30 minutos completos. No hay límite de extensiones: la
+    // recupera el plazo completo otra vez. No hay límite de extensiones: la
     // decisión es suya, como en el aviso de sesión de un banco.
     reiniciarTemporizadores.current();
     // Además del plazo, se renueva el JWT en segundo plano para que la sesión
