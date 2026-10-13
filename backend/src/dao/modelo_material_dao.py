@@ -70,7 +70,7 @@ class ModeloMaterialDAO:
             mm.Cantidad, mm.Unidad_medida, mm.Costo_utilizado,
             m.Nombre_material
             FROM modelo_material mm
-            INNER JOIN Material m ON mm.id_material = m.id_material
+            INNER JOIN material m ON mm.id_material = m.id_material
             WHERE mm.id_modelo = %s
             """,
             (id_modelo,)

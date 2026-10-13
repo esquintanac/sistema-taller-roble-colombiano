@@ -41,7 +41,7 @@ class ModeloDAO:
         try:
             cursor = conexion.cursor()
             sql = """
-                INSERT INTO Modelo
+                INSERT INTO modelo
                     (id_carpintero, id_cliente, Nombre_modelo, Descripcion,
                      Alto, Ancho, Largo, Grosor, Puertas, Compartimientos,
                      Entrepanos_compartimientos, Cajones, Color,
@@ -79,11 +79,11 @@ class ModeloDAO:
             cursor = conexion.cursor()
             if id_carpintero:
                 cursor.execute(
-                    f"SELECT {self.COLUMNAS} FROM Modelo WHERE id_carpintero = %s ORDER BY id_modelo DESC",
+                    f"SELECT {self.COLUMNAS} FROM modelo WHERE id_carpintero = %s ORDER BY id_modelo DESC",
                     (id_carpintero,)
                 )
             else:
-                cursor.execute(f"SELECT {self.COLUMNAS} FROM Modelo ORDER BY id_modelo DESC")
+                cursor.execute(f"SELECT {self.COLUMNAS} FROM modelo ORDER BY id_modelo DESC")
             return [self._fila_a_modelo(fila) for fila in cursor.fetchall()]
         except Error as error:
             print("Error al consultar modelos:", error)
@@ -98,7 +98,7 @@ class ModeloDAO:
             return None
         try:
             cursor = conexion.cursor()
-            cursor.execute(f"SELECT {self.COLUMNAS} FROM Modelo WHERE id_modelo = %s", (id_modelo,))
+            cursor.execute(f"SELECT {self.COLUMNAS} FROM modelo WHERE id_modelo = %s", (id_modelo,))
             fila = cursor.fetchone()
             return self._fila_a_modelo(fila) if fila else None
         except Error as error:
@@ -115,7 +115,7 @@ class ModeloDAO:
         try:
             cursor = conexion.cursor()
             sql = """
-                UPDATE Modelo
+                UPDATE modelo
                 SET Nombre_modelo = %s, Descripcion = %s, Alto = %s, Ancho = %s,
                     Largo = %s, Grosor = %s, Puertas = %s, Compartimientos = %s,
                     Entrepanos_compartimientos = %s, Cajones = %s, Color = %s,
@@ -148,7 +148,7 @@ class ModeloDAO:
             return False
         try:
             cursor = conexion.cursor()
-            cursor.execute("DELETE FROM Modelo WHERE id_modelo = %s", (id_modelo,))
+            cursor.execute("DELETE FROM modelo WHERE id_modelo = %s", (id_modelo,))
             conexion.commit()
             return cursor.rowcount > 0
         except Error as error:

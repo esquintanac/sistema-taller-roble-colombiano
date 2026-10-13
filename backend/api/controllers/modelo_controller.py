@@ -182,7 +182,7 @@ def _obtener_nombre_usuario(id_usuario):
     try:
         cursor = conexion.cursor()
         cursor.execute(
-            "SELECT Nombre, Apellido FROM Usuario WHERE id_usuario = %s",
+            "SELECT Nombre, Apellido FROM usuario WHERE id_usuario = %s",
             (id_usuario,)
         )
         fila = cursor.fetchone()

@@ -26,10 +26,10 @@ class HistorialDAO:
             m.Nombre_modelo, m.Alto, m.Ancho, m.Largo,
             u.Nombre AS nombre_carpintero, u.Apellido AS apellido_carpintero,
             c.Nombre AS nombre_cliente, c.Apellido AS apellido_cliente
-        FROM Historial h
-        INNER JOIN Modelo m ON h.id_modelo = m.id_modelo
-        INNER JOIN Usuario u ON h.id_usuario = u.id_usuario
-        INNER JOIN Cliente c ON h.id_cliente = c.id_cliente
+        FROM historial h
+        INNER JOIN modelo m ON h.id_modelo = m.id_modelo
+        INNER JOIN usuario u ON h.id_usuario = u.id_usuario
+        INNER JOIN cliente c ON h.id_cliente = c.id_cliente
     """
 
     def _fila_a_dict(self, fila) -> dict:
@@ -61,7 +61,7 @@ class HistorialDAO:
         try:
             cursor = conexion.cursor()
             sql = """
-                INSERT INTO Historial
+                INSERT INTO historial
                     (id_modelo, id_usuario, id_cliente, Comentario,
                      Fecha_creacion, Estado_revision, Accion)
                 VALUES (%s, %s, %s, %s, NOW(), %s, %s)
@@ -116,7 +116,7 @@ class HistorialDAO:
         try:
             cursor = conexion.cursor()
             cursor.execute(
-                "UPDATE Historial SET Estado_revision = %s, Accion = %s WHERE id_historial = %s",
+                "UPDATE historial SET Estado_revision = %s, Accion = %s WHERE id_historial = %s",
                 (nuevo_estado, "Revisión de diseño", id_historial)
             )
             conexion.commit()

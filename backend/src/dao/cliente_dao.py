@@ -21,7 +21,7 @@ class ClienteDAO:
         try:
             cursor = conexion.cursor()
             sql = """
-                INSERT INTO Cliente
+                INSERT INTO cliente
                     (Nombre, Apellido, Tipo_documento_identificacion,
                      Numero_documento_identificacion, Telefono_cliente,
                      Correo_cliente, Direccion_cliente, Fecha_registro)
@@ -52,7 +52,7 @@ class ClienteDAO:
             return clientes
         try:
             cursor = conexion.cursor()
-            cursor.execute("SELECT * FROM Cliente ORDER BY id_cliente")
+            cursor.execute("SELECT * FROM cliente ORDER BY id_cliente")
             for fila in cursor.fetchall():
                 clientes.append(Cliente(
                     id_cliente=fila[0], nombre=fila[1], apellido=fila[2],
@@ -75,7 +75,7 @@ class ClienteDAO:
             return None
         try:
             cursor = conexion.cursor()
-            cursor.execute("SELECT * FROM Cliente WHERE id_cliente = %s", (id_cliente,))
+            cursor.execute("SELECT * FROM cliente WHERE id_cliente = %s", (id_cliente,))
             fila = cursor.fetchone()
             if fila is None:
                 return None
@@ -100,7 +100,7 @@ class ClienteDAO:
         try:
             cursor = conexion.cursor()
             sql = """
-                UPDATE Cliente
+                UPDATE cliente
                 SET Nombre = %s, Apellido = %s,
                     Tipo_documento_identificacion = %s,
                     Numero_documento_identificacion = %s,
@@ -131,7 +131,7 @@ class ClienteDAO:
             return False
         try:
             cursor = conexion.cursor()
-            cursor.execute("DELETE FROM Cliente WHERE id_cliente = %s", (id_cliente,))
+            cursor.execute("DELETE FROM cliente WHERE id_cliente = %s", (id_cliente,))
             conexion.commit()
             return cursor.rowcount > 0
         except Error as error:

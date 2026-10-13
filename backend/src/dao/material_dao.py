@@ -25,7 +25,7 @@ class MaterialDAO:
             return materiales
         try:
             cursor = conexion.cursor()
-            cursor.execute("SELECT * FROM Material ORDER BY id_material")
+            cursor.execute("SELECT * FROM material ORDER BY id_material")
             filas = cursor.fetchall()
             for fila in filas:
                 materiales.append(Material(
@@ -77,7 +77,7 @@ class MaterialDAO:
         try:
             cursor = conexion.cursor()
             sql = """
-            INSERT INTO Material(Nombre_material, Tipo_material, Unidad_medida, Costo_unitario, Stock,
+            INSERT INTO material(Nombre_material, Tipo_material, Unidad_medida, Costo_unitario, Stock,
             Stock_minimo, Fecha_registro) VALUES(%s, %s, %s, %s, %s, %s, NOW())
             """
             valores = (
@@ -104,7 +104,7 @@ class MaterialDAO:
         try:
             cursor = conexion.cursor()
             sql = """
-            UPDATE Material SET Nombre_material = %s, Tipo_material = %s, Unidad_medida = %s, Costo_unitario = %s,
+            UPDATE material SET Nombre_material = %s, Tipo_material = %s, Unidad_medida = %s, Costo_unitario = %s,
             Stock = %s, Stock_minimo = %s WHERE id_material = %s
             """
             valores = (
@@ -133,7 +133,7 @@ class MaterialDAO:
         try:
             cursor = conexion.cursor()
             cursor.execute(
-                "DELETE FROM Material WHERE id_material = %s", (id_material,)
+                "DELETE FROM material WHERE id_material = %s", (id_material,)
             )
             conexion.commit()
             if cursor.rowcount == 0:

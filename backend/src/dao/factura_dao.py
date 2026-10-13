@@ -66,8 +66,8 @@ class FacturaDAO:
             c.Nombre AS nombre_cliente, c.Apellido AS apellido_cliente,
             m.Nombre_modelo
             FROM factura f
-            INNER JOIN Cliente c ON f.id_cliente = c.id_cliente
-            INNER JOIN Modelo m ON f.id_modelo = m.id_modelo
+            INNER JOIN cliente c ON f.id_cliente = c.id_cliente
+            INNER JOIN modelo m ON f.id_modelo = m.id_modelo
             ORDER BY f.id_factura DESC
             """
             )
@@ -100,8 +100,8 @@ class FacturaDAO:
                 c.Nombre AS nombre_cliente, c.Apellido AS apellido_cliente,
                 m.Nombre_modelo
                 FROM factura f
-                INNER JOIN Cliente c ON f.id_cliente = c.id_cliente
-                INNER JOIN Modelo m ON f.id_modelo = m.id_modelo
+                INNER JOIN cliente c ON f.id_cliente = c.id_cliente
+                INNER JOIN modelo m ON f.id_modelo = m.id_modelo
                 WHERE f.id_factura = %s
                 ORDER BY f.id_factura DESC
                 """, (id_factura,)
@@ -114,8 +114,8 @@ class FacturaDAO:
                 """
                 SELECT d.id_detalle, d.id_material, d.Cantidad, d.Precio_unitario,
                 d.Subtotal, m.Nombre_material
-                FROM detalleFactura d
-                INNER JOIN Material m ON d.id_material = m.id_material
+                FROM detallefactura d
+                INNER JOIN material m ON d.id_material = m.id_material
                 WHERE d.id_factura = %s
                 """, (id_factura,)
                 )
@@ -173,7 +173,7 @@ class FacturaDAO:
                    SUM(mm.Costo_utilizado) AS total_estimado
             FROM modelo m
             INNER JOIN modelo_material mm ON mm.id_modelo = m.id_modelo
-            INNER JOIN Cliente c ON c.id_cliente = m.id_cliente
+            INNER JOIN cliente c ON c.id_cliente = m.id_cliente
             GROUP BY m.id_modelo, m.Nombre_modelo, c.Nombre, c.Apellido
             ORDER BY m.id_modelo DESC
             """)
