@@ -289,7 +289,26 @@ export function AuthProvider({ children }) {
 
   // Se llama justo después de validar usuario/contraseña contra la API:
   // refleja en React la sesión que authService dejó pendiente de código.
+  // Un login nuevo con otras credenciales manda sobre cualquier sesión
+  // anterior que siguiera en el navegador (localStorage lo comparten todas
+  // las pestañas): si no se retira aquí, /verificacion sigue viendo al
+  // usuario viejo, lo redirige al panel y el segundo factor del usuario
+  // nuevo nunca llega a mostrarse.
   function iniciarVerificacion() {
+    // Primero el almacenamiento y luego la memoria: la pendiente recién
+    // escrita por login() NO se toca (terminarSesionActiva la respeta).
+    authService.terminarSesionActiva();
+    setUsuario(null);
+    // Con la sesión anterior fuera, su aviso de inactividad (si estaba en
+    // pantalla) ya no aplica. Los temporizadores no hace falta limpiarlos
+    // a mano: el efecto de inactividad depende de `usuario` y su limpieza
+    // se ejecuta solita al pasar a null.
+    avisoVisible.current = false;
+    setAvisoSesion(null);
+    // Y tampoco queda la marca de "se te expiró": el usuario está entrando
+    // a propósito con otras credenciales.
+    olvidarExpiracion();
+
     const pendiente = authService.sesionPendiente();
     setUsuarioPendiente(pendiente?.usuario ?? null);
     return pendiente;

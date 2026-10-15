@@ -243,6 +243,18 @@ const authService = {
 
   descartarPendiente: () => localStorage.removeItem(CLAVES.pendiente),
 
+  // Termina la sesión activa (token, refresh y usuario) SIN tocar la
+  // sesión pendiente de verificación. Lo usa AuthContext.iniciarVerificacion:
+  // cuando alguien valida OTRAS credenciales mientras en el navegador seguía
+  // guardada una sesión anterior (localStorage lo comparten todas las
+  // pestañas), esa sesión vieja se retira para que /verificacion muestre el
+  // código del usuario nuevo en lugar de redirigirlo al panel del anterior.
+  // A diferencia de limpiarSesion(), aquí NO se borra CLAVES.pendiente:
+  // acaba de escribirla el login que está a punto de verificarse.
+  terminarSesionActiva: () => {
+    [CLAVES.token, CLAVES.refresh, CLAVES.usuario].forEach((k) => localStorage.removeItem(k));
+  },
+
   limpiarSesion: () => {
     Object.values(CLAVES).forEach((k) => localStorage.removeItem(k));
   },

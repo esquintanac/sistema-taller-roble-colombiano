@@ -10,27 +10,34 @@ import VerificationCodeForm from "../components/auth/VerificationCodeForm";
 export default function VerificationPage() {
     const { usuario, usuarioPendiente } = useAuth();
 
+    // Credenciales validadas esperando el código: mientras exista la
+    // pendiente, ESTA es la pantalla que toca. Si aquí se mirara primero
+    // `usuario`, una sesión anterior guardada en el navegador (localStorage
+    // lo comparten todas las pestañas del mismo navegador) redirigiría al
+    // panel del usuario viejo sin llegar a pedir el código del login nuevo.
+    // (iniciarVerificacion() ya retira esa sesión previa al navegar hasta
+    // aquí, pero este orden deja la página a prueba de cualquier resto.)
+    if (usuarioPendiente) {
+        return (
+            <div className="container-sm" style={{ maxWidth: 420, margin: "80px auto" }}>
+                <div className="card">
+                    <h1 style={{ fontSize: 22 }}>Verificación de seguridad</h1>
+                    <VerificationCodeForm />
+                </div>
+            </div>
+        );
+    }
+
     // Sesión YA activa: la verificación se completó y hay que estar en el
-    // panel. Esta comprobación va PRIMERO a propósito.
-    //
-    // Al confirmar el código, confirmarSesion() deja usuario=null ->
-    // usuario con su rol y usuarioPendiente -> null, y en el mismo
-    // evento se llama navigate("/inicio"). Si esta pantalla solo mirara
-    // usuarioPendiente, durante ese render devolvería
-    // <Navigate to="/login" />, que navega EN EL RENDER y se llevaría al
+    // panel. Al confirmar el código, confirmarSesion() deja
+    // usuarioPendiente -> null y usuario -> con su rol, y en el mismo
+    // evento se llama navigate("/inicio"), así que en este render ya no
+    // queda pendiente. Si la pantalla cayera entonces al caso "sin nada",
+    // <Navigate to="/login" /> navegaría EN EL RENDER y se llevaría al
     // usuario al login aun cuando la navegación al panel ya estuviera en
-    // curso. Por eso el caso "ya verificado" se resuelve antes.
+    // curso. Por eso el caso "ya verificado" se resuelve antes que el final.
     if (usuario) return <Navigate to="/inicio" replace />;
 
-    // Sin credenciales validadas no hay nada que verificar: al login.
-    if (!usuarioPendiente) return <Navigate to="/login" replace />;
-
-    return (
-        <div className="container-sm" style={{ maxWidth: 420, margin: "80px auto" }}>
-            <div className="card">
-                <h1 style={{ fontSize: 22 }}>Verificación de seguridad</h1>
-                <VerificationCodeForm />
-            </div>
-        </div>
-    );
+    // Sin credenciales validadas y sin sesión: al login.
+    return <Navigate to="/login" replace />;
 }
