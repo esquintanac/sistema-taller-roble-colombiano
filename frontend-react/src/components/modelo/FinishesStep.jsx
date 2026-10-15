@@ -103,6 +103,7 @@ export default function FinishesStep({
           as="select"
           value={datos.materialFondo}
           onChange={onChange}
+          error={errores.materialFondo}
           requerido
           opciones={MATERIALES_FONDO}
         />
