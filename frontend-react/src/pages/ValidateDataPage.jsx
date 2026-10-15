@@ -55,6 +55,19 @@ const CAMPOS_BOOLEANOS = [
   "llevaFondo",
 ];
 
+// Un campo ligado a un interruptor solo se muestra si ese interruptor está
+// activo: si el usuario desactivó "¿Lleva puertas?", el tipo y el número de
+// puertas dejan de aplicar (el payload se guarda con puertas = 0 y tipo "")
+// y mostrarlos en el resumen contradeciría el "No".
+const TOGGLE_DE_CAMPO = {
+  numCajones: "llevaCajones",
+  alturaBarra: "llevaBarra",
+  tipoPuerta: "llevaPuertas",
+  numPuertas: "llevaPuertas",
+  alturaZocalo: "llevaZocalo",
+  materialFondo: "llevaFondo",
+};
+
 export default function ValidateDataPage() {
   const navigate = useNavigate();
   const { usuario } = useAuth();
@@ -126,7 +139,11 @@ export default function ValidateDataPage() {
             // Oculta campos vacíos, false sin marcar, o que no aplican
             const estaVacio = valor === "" || valor === undefined || valor === null;
             const esFalseIrrelevante = valor === false && !CAMPOS_BOOLEANOS.includes(clave);
-            if (estaVacio || esFalseIrrelevante) return null;
+            // También oculta los campos cuyo interruptor está apagado.
+            const toggleDelCampo = TOGGLE_DE_CAMPO[clave];
+            if (estaVacio || esFalseIrrelevante || (toggleDelCampo && !datos[toggleDelCampo])) {
+              return null;
+            }
 
             const valorMostrado = config.formato
               ? config.formato(valor)

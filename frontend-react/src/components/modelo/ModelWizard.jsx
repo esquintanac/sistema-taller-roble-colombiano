@@ -23,6 +23,18 @@ const DATOS_INICIALES = {
   idCliente: "", observaciones: "",
 };
 
+// Regla única de campos condicionales: si el interruptor está activo, estos
+// campos son obligatorios para avanzar; si está apagado se ignoran (el backend
+// recibe 0 / "" y no genera la pieza asociada). Quien no quiera el elemento
+// debe desactivar el interruptor para poder continuar.
+const CAMPOS_POR_TOGGLE = {
+  llevaCajones: ["numCajones"],
+  llevaBarra: ["alturaBarra"],
+  llevaPuertas: ["tipoPuerta", "numPuertas"],
+  llevaZocalo: ["alturaZocalo"],
+  llevaFondo: ["materialFondo"],
+};
+
 export default function ModelWizard() {
   const [subPaso, setSubPaso] = useState("1A");
   // Si el usuario vuelve desde la validación ("No, corregir datos"), se
@@ -83,6 +95,16 @@ export default function ModelWizard() {
 
   function handleToggle(campo) {
     setDatos({ ...datos, [campo]: !datos[campo] });
+    // Al cambiar un toggle se limpian los errores de sus campos asociados:
+    // si el interruptor se apaga, el campo queda oculto y deja de ser
+    // obligatorio; si se vuelve a encender, el error se emitirá de nuevo
+    // al pulsar el botón. Así nunca queda el mensaje de un campo invisible.
+    const asociados = CAMPOS_POR_TOGGLE[campo] || [];
+    if (asociados.some((c) => errores[c])) {
+      const limpios = { ...errores };
+      asociados.forEach((c) => delete limpios[c]);
+      setErrores(limpios);
+    }
   }
 
   // Valida un conjunto de campos obligatorios; retorna true si todos están completos
@@ -103,19 +125,39 @@ export default function ModelWizard() {
     if (validarCampos(obligatorios)) setSubPaso("1B");
   }
 
+  // Campos obligatorios de los toggles indicados, solo si están activados.
+  function camposDeToggles(toggles) {
+    return toggles.flatMap((toggle) => (datos[toggle] ? CAMPOS_POR_TOGGLE[toggle] : []));
+  }
+
   function irA1C() {
-    const obligatorios = ["compartimentos", "entrepanos"];
-    if (datos.llevaCajones) obligatorios.push("numCajones");
-    if (datos.llevaBarra) obligatorios.push("alturaBarra");
+    const obligatorios = [
+      "compartimentos",
+      "entrepanos",
+      ...camposDeToggles(["llevaCajones", "llevaBarra"]),
+    ];
     if (validarCampos(obligatorios)) setSubPaso("1C");
   }
 
   function handleRegistrar() {
-    const obligatorios = ["idCliente"];
-    // El zócalo es opcional como concepto, pero si el usuario lo activa
-    // debe indicar su altura: el backend guarda altura_zocalo = 0 cuando
-    // no se usa, así que un "sí" sin medida dejaría el dato incompleto.
-    if (datos.llevaZocalo) obligatorios.push("alturaZocalo");
+    // idCliente siempre es obligatorio. Además, cada elemento activo con su
+    // interruptor exige sus datos:
+    //  - puertas → tipo y número (sin esta regla se registraba un modelo "con
+    //    puertas" con campos vacíos y el payload llegaba con puertas = 0);
+    //  - fondo trasero → material (sin él la CalculadoraService no genera la
+    //    pieza "Fondo trasero");
+    //  - zócalo → altura, cajones → cantidad, barra → altura (mismo criterio).
+    // Quien no quiera el elemento debe apagar su interruptor para registrar.
+    const obligatorios = [
+      "idCliente",
+      ...camposDeToggles([
+        "llevaPuertas",
+        "llevaZocalo",
+        "llevaFondo",
+        "llevaCajones",
+        "llevaBarra",
+      ]),
+    ];
     if (!validarCampos(obligatorios)) return;
 
     // Se guarda también el nombre legible del cliente para que el resumen

@@ -55,11 +55,11 @@ export default function FinishesStep({
       {datos.llevaPuertas && (
         <div className="grid-2 mb-md">
           <FormField
-            label="Tipo de puerta" name="tipoPuerta" as="select" value={datos.tipoPuerta} onChange={onChange} error={errores.tipoPuerta}
+            label="Tipo de puerta" name="tipoPuerta" as="select" value={datos.tipoPuerta} onChange={onChange} error={errores.tipoPuerta} requerido
             opciones={[{ value: "abatible", label: "Abatible" }, { value: "corrediza", label: "Corrediza" }]}
           />
           <FormField
-            label="Número de puertas" name="numPuertas" as="select" value={datos.numPuertas} onChange={onChange} error={errores.numPuertas}
+            label="Número de puertas" name="numPuertas" as="select" value={datos.numPuertas} onChange={onChange} error={errores.numPuertas} requerido
             opciones={[1, 2, 3, 4].map((n) => ({ value: n, label: n }))}
           />
         </div>
@@ -103,6 +103,7 @@ export default function FinishesStep({
           as="select"
           value={datos.materialFondo}
           onChange={onChange}
+          requerido
           opciones={MATERIALES_FONDO}
         />
       )}
