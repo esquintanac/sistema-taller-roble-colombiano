@@ -60,6 +60,21 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; color: var(--seminegro); }
 .field-error { font-size: 12px; color: var(--error); margin-top: 4px; }
 .field-hint { font-size: 11px; color: var(--tx-muted); margin-top: 4px; display: block; }
 
+/* Campo de contraseña: botón de ojo para ver/ocultar la contraseña mientras
+   el usuario la escribe (FormField con tipo="password"). El botón es
+   type="button" para que nunca dispare el submit del formulario. */
+.campo-password { position: relative; }
+.campo-password .form-control { padding-right: 46px; }
+.campo-ojo {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 34px; height: 34px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none; border-radius: var(--r-md);
+  color: var(--tx-muted); cursor: pointer; transition: .15s;
+}
+.campo-ojo:hover { color: var(--primary); background: var(--primary-lt); }
+.campo-ojo:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 24px; }
 
 /* Panel del Taller: rejilla de tarjetas de acciones (HomePage) */
