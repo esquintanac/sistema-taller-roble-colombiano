@@ -17,26 +17,32 @@
 import { useEffect, useRef } from "react";
 import Button from "./Button";
 
-const ICONOS = { success: "✓", error: "✕", confirm: "⚠" };
+const ICONOS = { success: "✓", error: "✕", confirm: "⚠", info: "✎" };
 
 const TITULOS = {
   success: "Operación exitosa",
   error: "No se pudo completar la operación",
   confirm: "Confirma la acción",
+  info: "Editar registro",
 };
 
 export default function Modal({
   tipo = "success",
   titulo,
   mensaje,
+  children,
   textoAceptar = "Aceptar",
   textoConfirmar = "Eliminar",
+  deshabilitado = false,
   onAceptar,
   onConfirmar,
   onCancelar,
 }) {
   const botonPrincipal = useRef(null);
   const esConfirmacion = tipo === "confirm";
+  // Escape y el clic en el fondo cierran el aviso o cancelan la acción;
+  // nunca ejecutan la acción principal por su cuenta.
+  const cerrar = onCancelar ?? onAceptar;
 
   // Al abrirse, el foco va al boton principal: con teclado se responde de
   // inmediato sin tabular por la ventana (mismo criterio que AvisoSesion).
@@ -44,25 +50,23 @@ export default function Modal({
     botonPrincipal.current?.focus();
   }, []);
 
-  // Escape cierra los avisos y cancela las confirmaciones. Nunca confirma:
-  // la tecla de salida rapida no debe borrar nada.
   useEffect(() => {
     function manejarEscape(evento) {
       if (evento.key !== "Escape") return;
       if (esConfirmacion) onCancelar?.();
-      else onAceptar?.();
+      else cerrar?.();
     }
     window.addEventListener("keydown", manejarEscape);
     return () => window.removeEventListener("keydown", manejarEscape);
-  }, [esConfirmacion, onAceptar, onCancelar]);
+  }, [esConfirmacion, onCancelar, cerrar]);
 
   return (
-    // En los avisos (exito/error) pulsar fuera tambien los cierra; en las
-    // confirmaciones el fondo no hace nada: la decision solo se toma con
-    // los botones.
+    // En los avisos (exito/error) y en los formularios (info) pulsar fuera
+    // cierra o cancela; en las confirmaciones el fondo no hace nada: la
+    // decisión solo se toma con los botones.
     <div
       className="modal-overlay"
-      onClick={esConfirmacion ? undefined : onAceptar}
+      onClick={esConfirmacion ? undefined : cerrar}
     >
       <div
         className="modal-aviso"
@@ -80,6 +84,8 @@ export default function Modal({
 
         <p className="modal-aviso-texto">{mensaje}</p>
 
+        {children}
+
         <div className="modal-aviso-acciones">
           {esConfirmacion ? (
             <>
@@ -93,14 +99,22 @@ export default function Modal({
               </Button>
             </>
           ) : (
-            <Button
-              ref={botonPrincipal}
-              variante={tipo === "error" ? "danger" : "primary"}
-              fullWidth
-              onClick={onAceptar}
-            >
-              {textoAceptar}
-            </Button>
+            <>
+              {onCancelar && (
+                <Button variante="secondary" fullWidth onClick={onCancelar}>
+                  Cancelar
+                </Button>
+              )}
+              <Button
+                ref={botonPrincipal}
+                variante={tipo === "error" ? "danger" : "primary"}
+                fullWidth
+                onClick={onAceptar}
+                disabled={deshabilitado}
+              >
+                {textoAceptar}
+              </Button>
+            </>
           )}
         </div>
       </div>

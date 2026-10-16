@@ -17,6 +17,10 @@ MENSAJES_ERROR = {
     "modelo_no_encontrado": "El modelo indicado no existe.",
     "sin_materiales": "El modelo no tiene materiales asociados. Asocia al menos uno antes de generar la factura.",
     "error_al_crear": "Ocurrio un error al generar la factura.",
+    "factura_no_encontrada": "La factura indicada no existe.",
+    "metodo_vacio": "metodo_pago es obligatorio.",
+    "error_al_actualizar": "No se pudo actualizar la factura.",
+    "error_al_eliminar": "No se pudo eliminar la factura.",
 }
 
 @api_view(["GET", "POST"])
@@ -66,16 +70,47 @@ def facturas_modelos_facturables(request):
     """
     return Response(FacturaService.listar_modelos_facturables(), status=status.HTTP_200_OK)
 
-@api_view(["GET"])
+@api_view(["GET", "PUT", "DELETE"])
 @requiere_rol("Administrador")
 def facturas_detalle(request, id_factura):
-    factura = FacturaService.obtener(id_factura)
-    if factura is None:
+    if request.method == "GET":
+        factura = FacturaService.obtener(id_factura)
+        if factura is None:
+            return Response(
+                {"exito": False, "mensaje": f"No existe una factura con ID {id_factura}."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        return Response(factura, status=status.HTTP_200_OK)
+
+    if request.method == "PUT":
+        # Cambio de metodo de pago (p. ej. el acuerdo de cobro cambio).
+        metodo_pago = (request.data.get("metodo_pago") or "").strip()
+        if not metodo_pago:
+            return Response(
+                {"exito": False, "mensaje": "metodo_pago es obligatorio."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        resultado = FacturaService.editar_metodo_pago(id_factura, metodo_pago)
+        if "error" in resultado:
+            codigo = status.HTTP_404_NOT_FOUND if resultado["error"] == "factura_no_encontrada" else status.HTTP_400_BAD_REQUEST
+            return Response(
+                {"exito": False, "mensaje": MENSAJES_ERROR[resultado["error"]]},
+                status=codigo,
+            )
+        return Response(resultado, status=status.HTTP_200_OK)
+
+    # DELETE: borra la factura con sus lineas de material.
+    resultado = FacturaService.eliminar_factura(id_factura)
+    if "error" in resultado:
+        codigo = status.HTTP_404_NOT_FOUND if resultado["error"] == "factura_no_encontrada" else status.HTTP_400_BAD_REQUEST
         return Response(
-            {"exito": False, "mensaje": f"No existe una factura con ID {id_factura}."},
-            status=status.HTTP_404_NOT_FOUND
+            {"exito": False, "mensaje": MENSAJES_ERROR[resultado["error"]]},
+            status=codigo,
         )
-    return Response(factura, status=status.HTTP_200_OK)
+    return Response(
+        {"exito": True, "mensaje": f"La factura {id_factura} fue eliminada."},
+        status=status.HTTP_200_OK,
+    )
 
 @api_view(["GET"])
 @requiere_rol("Administrador")
@@ -90,3 +125,19 @@ def facturas_descargar_pdf(request, id_factura):
     respuesta = HttpResponse(pdf_bytes, content_type="application/pdf")
     respuesta["Content-Disposition"] = f'attachment; filename="reporte_factura_{id_factura}.pdf"'
     return respuesta
+
+@api_view(["PUT"])
+@requiere_rol("Administrador")
+def facturas_marcar_pagada(request, id_factura):
+    """PUT /api/facturas/<id>/marcar-pagada/ -- factura Pagada.
+
+    Accion equivalente al 'Marcar como revisado' de los disenos (RF9),
+    con el mismo patron: sin body, la accion en si es el cambio.
+    """
+    actualizada = FacturaService.marcar_como_pagada(id_factura)
+    if actualizada is None:
+        return Response(
+            {"exito": False, "mensaje": MENSAJES_ERROR["factura_no_encontrada"]},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    return Response(actualizada, status=status.HTTP_200_OK)

@@ -365,6 +365,11 @@ html, body, #root {
   color: var(--error);
 }
 
+.modal-icono-info {
+  background: var(--info-bg);
+  color: var(--info);
+}
+
 .modal-aviso-texto {
   color: var(--tx-sec);
   font-size: 14px;

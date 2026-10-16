@@ -12,6 +12,9 @@
 //   GET /api/facturas/modelos-facturables/   -> diseños que se pueden facturar
 //   GET /api/facturas/<id_factura>/          -> encabezado + líneas de detalle
 //   GET /api/facturas/<id_factura>/pdf/      -> reporte PDF de la factura
+//   PUT /api/facturas/<id_factura>/          -> editar el método de pago
+//   DELETE /api/facturas/<id_factura>/       -> eliminar factura y sus líneas
+//   PUT /api/facturas/<id_factura>/marcar-pagada/ -> marcar como Pagada
 
 import api from "./api";
 
@@ -52,6 +55,28 @@ const facturasService = {
     const { data } = await api.get(`/facturas/${idFactura}/pdf/`, {
       responseType: "blob",
     });
+    return data;
+  },
+
+  // Corrige el método de pago de una factura ya emitida (p. ej. si el
+  // acuerdo de cobro cambió). El backend exige que no venga vacío.
+  editarMetodo: async (idFactura, metodoPago) => {
+    const { data } = await api.put(`/facturas/${idFactura}/`, {
+      metodo_pago: metodoPago,
+    });
+    return data;
+  },
+
+  // Elimina la factura con todas sus líneas de material.
+  eliminar: async (idFactura) => {
+    const { data } = await api.delete(`/facturas/${idFactura}/`);
+    return data;
+  },
+
+  // Marca la factura como Pagada, igual que el «Marcar como revisado»
+  // de los diseños en el historial.
+  marcarPagada: async (idFactura) => {
+    const { data } = await api.put(`/facturas/${idFactura}/marcar-pagada/`);
     return data;
   },
 };

@@ -192,3 +192,57 @@ class FacturaDAO:
         finally:
             cursor.close()
             Conexion.cerrar_conexion(conexion)
+
+    def actualizar_metodo_pago(self, id_factura: int, metodo_pago: str) -> bool:
+        """Corrige el Metodo_pago de una factura ya emitida."""
+        conexion = Conexion.obtener_conexion()
+        if conexion is None:
+            return False
+        try:
+            cursor = conexion.cursor()
+            cursor.execute("UPDATE factura SET Metodo_pago = %s WHERE id_factura = %s", (metodo_pago, id_factura))
+            conexion.commit()
+            return cursor.rowcount > 0
+        except Error as error:
+            print(f"Error al actualizar el metodo de pago: {error}")
+            return False
+        finally:
+            cursor.close()
+            Conexion.cerrar_conexion(conexion)
+
+    def actualizar_estado_pago(self, id_factura: int, estado_pago: str) -> bool:
+        """Cambia el Estado_pago (ej. de 'Pendiente' a 'Pagada')."""
+        conexion = Conexion.obtener_conexion()
+        if conexion is None:
+            return False
+        try:
+            cursor = conexion.cursor()
+            cursor.execute("UPDATE factura SET Estado_pago = %s WHERE id_factura = %s", (estado_pago, id_factura))
+            conexion.commit()
+            return cursor.rowcount > 0
+        except Error as error:
+            print(f"Error al actualizar el estado de pago: {error}")
+            return False
+        finally:
+            cursor.close()
+            Conexion.cerrar_conexion(conexion)
+
+    def eliminar_factura(self, id_factura: int) -> bool:
+        """Borra las lineas y luego el encabezado: la clave foranea de
+        detallefactura hacia factura impide eliminar en el otro orden."""
+        conexion = Conexion.obtener_conexion()
+        if conexion is None:
+            return False
+        try:
+            cursor = conexion.cursor()
+            cursor.execute("DELETE FROM detallefactura WHERE id_factura = %s", (id_factura,))
+            cursor.execute("DELETE FROM factura WHERE id_factura = %s", (id_factura,))
+            conexion.commit()
+            return cursor.rowcount > 0
+        except Error as error:
+            print(f"Error al eliminar la factura: {error}")
+            conexion.rollback()
+            return False
+        finally:
+            cursor.close()
+            Conexion.cerrar_conexion(conexion)

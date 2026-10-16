@@ -34,6 +34,41 @@ class FacturaService:
         return cls.dao.consultar_modelos_facturables()
 
     @classmethod
+    def editar_metodo_pago(cls, id_factura: int, metodo_pago: str):
+        """Corrige el metodo de pago de una factura ya emitida."""
+        existente = cls.dao.consultar_factura_por_id(id_factura)
+        if existente is None:
+            return {"error": "factura_no_encontrada"}
+        metodo_limpio = (metodo_pago or "").strip()
+        if not metodo_limpio:
+            return {"error": "metodo_vacio"}
+        if not cls.dao.actualizar_metodo_pago(id_factura, metodo_limpio):
+            return {"error": "error_al_actualizar"}
+        return cls.dao.consultar_factura_por_id(id_factura)
+
+    @classmethod
+    def eliminar_factura(cls, id_factura: int):
+        """Elimina la factura y sus lineas (el detalle se borra primero
+        porque la clave foranea lo impide al reves)."""
+        if cls.dao.consultar_factura_por_id(id_factura) is None:
+            return {"error": "factura_no_encontrada"}
+        if not cls.dao.eliminar_factura(id_factura):
+            return {"error": "error_al_eliminar"}
+        return {"exito": True}
+
+    @classmethod
+    def marcar_como_pagada(cls, id_factura: int):
+        """Cambia el estado de la factura a 'Pagada' (equivalente al
+        'Revisado' de los disenos de HistorialService.marcar_como_revisado)."""
+        existente = cls.dao.consultar_factura_por_id(id_factura)
+        if existente is None:
+            return None
+        if existente.get("estado_pago") == "Pagada":
+            return existente
+        cls.dao.actualizar_estado_pago(id_factura, "Pagada")
+        return cls.dao.consultar_factura_por_id(id_factura)
+
+    @classmethod
     def generar_factura(cls, id_modelo: int, metodo_pago: str = ""):
         modelo = cls.modelo_dao.consultar_modelo_por_id(id_modelo)
         if modelo is None:

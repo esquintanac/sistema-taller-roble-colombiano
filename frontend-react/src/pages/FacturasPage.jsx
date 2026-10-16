@@ -85,6 +85,14 @@ export default function FacturasPage() {
   // pago son obligatorios): van en rojo bajo cada campo y también en el
   // modal de validación, igual que en materiales y clientes.
   const [errores, setErrores] = useState({});
+  // Gestión de facturas emitidas: edición del método de pago, borrado y
+  // marcado como pagada (cada acción con su ventana emergente).
+  const [facturaEditando, setFacturaEditando] = useState(null);
+  const [metodoEditando, setMetodoEditando] = useState("");
+  const [errorEdicion, setErrorEdicion] = useState("");
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  const [facturaAEliminar, setFacturaAEliminar] = useState(null);
+  const [facturaAPagar, setFacturaAPagar] = useState(null);
 
   // Tipo de cambio (Fase 7) para mostrar los totales también en dólares.
   const divisa = useTipoCambio();
@@ -234,6 +242,95 @@ export default function FacturasPage() {
     }
   }
 
+  // ---- Acciones sobre facturas emitidas ----
+
+  // Abre el modal para corregir el método de pago de una factura ya creada.
+  function abrirEdicion(factura) {
+    setFacturaEditando(factura);
+    setMetodoEditando(factura.metodo_pago || "");
+    setErrorEdicion("");
+  }
+
+  async function guardarEdicion() {
+    // Igual que en el formulario de generación: el método es obligatorio.
+    if (!metodoEditando) {
+      setErrorEdicion("Elige el método de pago de la factura.");
+      return;
+    }
+    setGuardandoEdicion(true);
+    try {
+      const actualizada = await facturasService.editarMetodo(
+        facturaEditando.id_factura,
+        metodoEditando
+      );
+      setFacturaEditando(null);
+      setErrorEdicion("");
+      setMensaje({
+        tipo: "success",
+        titulo: "Factura actualizada",
+        texto: `La factura #${actualizada.id_factura} ahora tiene el método "${actualizada.metodo_pago}".`,
+      });
+      await cargarFacturas();
+      // Si el panel lateral la tenía abierta, se actualiza su método.
+      if (detalle && detalle.id_factura === actualizada.id_factura) {
+        setDetalle((prev) => ({ ...prev, metodo_pago: actualizada.metodo_pago }));
+      }
+    } catch (error) {
+      // El modal de edición queda abierto con el error bajo el campo.
+      setErrorEdicion(mensajeDeError(error, "la factura"));
+    } finally {
+      setGuardandoEdicion(false);
+    }
+  }
+
+  // El borrado pide confirmación con el número y el cliente a la vista.
+  async function confirmarEliminacion() {
+    const factura = facturaAEliminar;
+    setFacturaAEliminar(null);
+    try {
+      await facturasService.eliminar(factura.id_factura);
+      setMensaje({
+        tipo: "success",
+        titulo: "Factura eliminada",
+        texto: `La factura #${factura.id_factura} de ${factura.cliente} fue eliminada con sus líneas de material.`,
+      });
+      if (detalle && detalle.id_factura === factura.id_factura) {
+        setDetalle(null);
+      }
+      await cargarFacturas();
+    } catch (error) {
+      setMensaje({
+        tipo: "error",
+        titulo: "No se pudo eliminar",
+        texto: mensajeDeError(error, "la factura"),
+      });
+    }
+  }
+
+  // Equivalente al «Marcar como revisado» de los diseños 3D.
+  async function confirmarMarcadoPagada() {
+    const factura = facturaAPagar;
+    setFacturaAPagar(null);
+    try {
+      const actualizada = await facturasService.marcarPagada(factura.id_factura);
+      setMensaje({
+        tipo: "success",
+        titulo: "Factura marcada como pagada",
+        texto: `La factura #${factura.id_factura} de ${factura.cliente} quedó registrada como Pagada.`,
+      });
+      await cargarFacturas();
+      if (detalle && detalle.id_factura === actualizada.id_factura) {
+        setDetalle((prev) => ({ ...prev, estado_pago: actualizada.estado_pago }));
+      }
+    } catch (error) {
+      setMensaje({
+        tipo: "error",
+        titulo: "No se pudo marcar la factura",
+        texto: mensajeDeError(error, "la factura"),
+      });
+    }
+  }
+
   const filtradas = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
     if (!texto) return facturas;
@@ -368,12 +465,23 @@ export default function FacturasPage() {
                   : "Genera la primera factura desde el formulario de arriba."
               }
               renderAcciones={(factura) => (
-                <div style={{ display: "flex", gap: 6 }}>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   <Button tamano="sm" variante="secondary" onClick={() => verDetalle(factura)}>
                     Ver detalle
                   </Button>
                   <Button tamano="sm" variante="primary" onClick={() => descargarPdfDe(factura)}>
                     PDF
+                  </Button>
+                  <Button tamano="sm" variante="secondary" onClick={() => abrirEdicion(factura)}>
+                    Editar
+                  </Button>
+                  {factura.estado_pago === "Pendiente" && (
+                    <Button tamano="sm" variante="success" onClick={() => setFacturaAPagar(factura)}>
+                      Pagada
+                    </Button>
+                  )}
+                  <Button tamano="sm" variante="danger" onClick={() => setFacturaAEliminar(factura)}>
+                    Eliminar
                   </Button>
                 </div>
               )}
@@ -394,6 +502,58 @@ export default function FacturasPage() {
           </Card>
         </div>
       </div>
+
+      {/* Ventanas emergentes de las acciones sobre facturas emitidas:
+          edición del método, borrado y marcado como pagada. */}
+      {facturaEditando && (
+        <Modal
+          tipo="info"
+          titulo={`Editar factura #${facturaEditando.id_factura}`}
+          mensaje={`Corrige el método de pago de la factura de ${facturaEditando.cliente} si hubo un cambio en el acuerdo de cobro.`}
+          textoAceptar="Guardar cambios"
+          deshabilitado={guardandoEdicion}
+          onAceptar={guardarEdicion}
+          onCancelar={() => {
+            setFacturaEditando(null);
+            setErrorEdicion("");
+          }}
+        >
+          <FormField
+            label="Método de pago"
+            requerido
+            as="select"
+            value={metodoEditando}
+            error={errorEdicion}
+            onChange={(e) => {
+              setMetodoEditando(e.target.value);
+              setErrorEdicion("");
+            }}
+            opciones={METODOS_PAGO}
+          />
+        </Modal>
+      )}
+
+      {facturaAEliminar && (
+        <Modal
+          tipo="confirm"
+          titulo="Eliminar factura"
+          mensaje={`¿Seguro que quieres eliminar la factura #${facturaAEliminar.id_factura} de ${facturaAEliminar.cliente}? Se borran también sus líneas de material y no se puede deshacer.`}
+          textoConfirmar="Eliminar"
+          onConfirmar={confirmarEliminacion}
+          onCancelar={() => setFacturaAEliminar(null)}
+        />
+      )}
+
+      {facturaAPagar && (
+        <Modal
+          tipo="confirm"
+          titulo="Marcar como pagada"
+          mensaje={`¿La factura #${facturaAPagar.id_factura} de ${facturaAPagar.cliente} ya se pagó? Quedará registrada como Pagada.`}
+          textoConfirmar="Marcar como pagada"
+          onConfirmar={confirmarMarcadoPagada}
+          onCancelar={() => setFacturaAPagar(null)}
+        />
+      )}
     </div>
   );
 }

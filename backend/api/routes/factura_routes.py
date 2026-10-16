@@ -14,6 +14,7 @@ urlpatterns = [
     path("facturas/modelos-facturables/", factura_controller.facturas_modelos_facturables, name="api-facturas-modelos-facturables"),
     path("facturas/<int:id_factura>/", factura_controller.facturas_detalle, name="api-facturas-detalle"),
     path("facturas/<int:id_factura>/pdf/", factura_controller.facturas_descargar_pdf, name="api-facturas-pdf"),
+    path("facturas/<int:id_factura>/marcar-pagada/", factura_controller.facturas_marcar_pagada, name="api-facturas-marcar-pagada"),
 
     # Relacion Modelo-Material (anidada bajo /modelos/ conceptualmente)
     path("modelos/<int:id_modelo>/materiales/", modelo_material_controller.materiales_del_modelo, name="api-modelo-materiales"),
