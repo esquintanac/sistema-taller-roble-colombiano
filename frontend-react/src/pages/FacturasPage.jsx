@@ -13,7 +13,7 @@
 // filtrado por los que se pueden facturar, que es justo lo que generar_factura
 // exige.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import facturasService from "../services/facturasService";
 import { formatearFecha } from "../services/historialService";
 import { aDolares, guardarBlob, mensajeDeError, pesos } from "../utils/descargas";
@@ -22,7 +22,7 @@ import DataTable from "../components/ui/DataTable";
 import FormField from "../components/ui/FormField";
 import Button from "../components/ui/Button";
 import PanelFactura from "../components/admin/PanelFactura";
-import Alert from "../components/ui/Alert";
+import Modal from "../components/ui/Modal";
 import Card from "../components/ui/Card";
 import StatCard from "../components/ui/StatCard";
 import Spinner from "../components/ui/Spinner";
@@ -83,6 +83,11 @@ export default function FacturasPage() {
   // Tipo de cambio (Fase 7) para mostrar los totales también en dólares.
   const divisa = useTipoCambio();
 
+  // Panel de detalle: en pantallas pequeñas queda debajo de la tabla, así
+  // que al abrir una factura (y tras generarla) se lleva la vista hasta él,
+  // igual que el scroll automático de materiales y clientes.
+  const panelDetalleRef = useRef(null);
+
   async function cargarFacturas() {
     try {
       setCargando(true);
@@ -134,6 +139,9 @@ export default function FacturasPage() {
       });
     } finally {
       setCargandoDetalle(false);
+      // En pantallas pequeñas el panel queda debajo de la tabla: sin este
+      // desplazamiento hay que hacer scroll a mano para ver el detalle.
+      panelDetalleRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }
 
@@ -144,7 +152,7 @@ export default function FacturasPage() {
     const modeloElegido = Number(idModelo);
     if (!Number.isInteger(modeloElegido) || modeloElegido <= 0) {
       setMensaje({
-        tipo: "warning",
+        tipo: "error",
         titulo: "Falta elegir el diseño",
         texto: "Selecciona el modelo al que se le va a facturar.",
       });
@@ -165,6 +173,9 @@ export default function FacturasPage() {
       setIdModelo("");
       await cargarFacturas();
       setDetalle(creada);
+      // El panel muestra la factura recién creada: se lleva la vista hasta
+      // él para ver el resultado sin tener que buscarlo.
+      panelDetalleRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     } catch (error) {
       // El backend responde 400 con un motivo concreto: el caso normal es
       // que el modelo todavía no tenga materiales asociados.
@@ -184,6 +195,11 @@ export default function FacturasPage() {
     try {
       const blob = await facturasService.descargarPdf(factura.id_factura);
       guardarBlob(blob, `factura_${factura.id_factura}.pdf`);
+      setMensaje({
+        tipo: "success",
+        titulo: "PDF descargado",
+        texto: `El PDF de la factura #${factura.id_factura} se guardó en tu equipo.`,
+      });
     } catch (error) {
       setMensaje({
         tipo: "error",
@@ -232,8 +248,16 @@ export default function FacturasPage() {
         />
       </div>
 
+      {/* Resultado de generar, abrir o descargar: ventana emergente en lugar
+          de la etiqueta superior (indicación del instructor, igual que en
+          materiales y clientes). */}
       {mensaje && (
-        <Alert tipo={mensaje.tipo} titulo={mensaje.titulo} mensaje={mensaje.texto} />
+        <Modal
+          tipo={mensaje.tipo}
+          titulo={mensaje.titulo}
+          mensaje={mensaje.texto}
+          onAceptar={() => setMensaje(null)}
+        />
       )}
 
       <div className="layout-panel">
@@ -325,7 +349,7 @@ export default function FacturasPage() {
         </div>
 
         {/* El panel de detalle va aparte en su propio componente. */}
-        <div>
+        <div ref={panelDetalleRef}>
           <Card>
             <PanelFactura
               detalle={detalle}
