@@ -6,7 +6,7 @@
 // separación la aplica ProtectedRoute en App.jsx y el backend la refuerza en
 // cliente_controller.py (crear, editar y eliminar exigen rol Administrador).
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import clientesService, { CLIENTE_VACIO, TIPOS_DOCUMENTO } from "../services/clientesService";
 import { mensajeDeError } from "../utils/descargas";
 import DataTable from "../components/ui/DataTable";
@@ -27,6 +27,18 @@ const CORREO_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // MySQL rechazaría el INSERT con "Data too long" y el cliente se perdería.
 // El prefijo internacional se escribe pegado ("+573001234567", 13 dígitos).
 const TELEFONO_VALIDO = /^\+?\d[\d\s-]{5,13}$/;
+
+// Límites de escritura por campo, siempre por debajo del tamaño real de las
+// columnas de MySQL (Nombre/Apellido/Direccion 255, documento 30, correo
+// 100): así ni el formulario ni la base aceptan textos interminables y el
+// dato que se guarda es el mismo que se ve en pantalla.
+const LIMITES_CLIENTE = {
+  nombre: 50,
+  apellido: 50,
+  numero_documento_identificacion: 20,
+  correo_cliente: 40,
+  direccion_cliente: 100, // entre 60 y 100: se eligió el tope del rango
+};
 
 // Cinco campos son obligatorios (ver ClienteService.validar_datos).
 // El teléfono está entre ellos porque sin él no hay forma de contactar al
@@ -76,6 +88,9 @@ export default function ClientesPage() {
   const [mensaje, setMensaje] = useState(null);
   const [busqueda, setBusqueda] = useState("");
   const [guardando, setGuardando] = useState(false);
+  // Referencia al <form> del Card: al editar desde la tabla (que queda
+  // debajo) la vista se desplaza sola hasta el formulario.
+  const formularioRef = useRef(null);
 
   async function cargarClientes() {
     try {
@@ -119,6 +134,15 @@ export default function ClientesPage() {
       nuevos.telefono_cliente =
         "Escribe solo números (máx. 15 caracteres). Ej: 300 123 4567 o +573001234567";
     }
+    // Longitudes máximas: el input ya corta la escritura con maxLength, pero
+    // aquí se valida también por si el valor llega desde otro lado (p. ej. un
+    // cliente guardado antes de que existiera el límite).
+    Object.entries(LIMITES_CLIENTE).forEach(([campo, maximo]) => {
+      const valor = String(formulario[campo] || "");
+      if (valor.length > maximo) {
+        nuevos[campo] = `Máximo ${maximo} caracteres`;
+      }
+    });
     setErrores(nuevos);
     return Object.keys(nuevos).length === 0;
   }
@@ -168,6 +192,9 @@ export default function ClientesPage() {
     setIdEditando(cliente.id_cliente);
     setErrores({});
     setMensaje(null);
+    // La tabla queda debajo del formulario: sin este desplazamiento hay
+    // que hacer scroll a mano para ver los datos cargados.
+    formularioRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function cancelarEdicion() {
@@ -238,15 +265,17 @@ export default function ClientesPage() {
       <Card className="mb-md">
         <h3>{idEditando ? `Editando cliente #${idEditando}` : "Registrar nuevo cliente"}</h3>
 
-        <form onSubmit={handleSubmit} noValidate>
+        <form ref={formularioRef} onSubmit={handleSubmit} noValidate>
           <div className="grid-2">
             <FormField
               label="Nombre" name="nombre" value={formulario.nombre}
               onChange={handleChange} error={errores.nombre} requerido
+              maxLength={LIMITES_CLIENTE.nombre}
             />
             <FormField
               label="Apellidos" name="apellido" value={formulario.apellido}
               onChange={handleChange} error={errores.apellido} requerido
+              maxLength={LIMITES_CLIENTE.apellido}
             />
             <FormField
               label="Tipo de documento" name="tipo_documento_identificacion"
@@ -258,6 +287,7 @@ export default function ClientesPage() {
               label="Número de documento" name="numero_documento_identificacion"
               value={formulario.numero_documento_identificacion}
               onChange={handleChange} error={errores.numero_documento_identificacion} requerido
+              maxLength={LIMITES_CLIENTE.numero_documento_identificacion}
             />
             <FormField
               label="Teléfono" name="telefono_cliente" tipo="tel"
@@ -268,6 +298,7 @@ export default function ClientesPage() {
               label="Correo electrónico" name="correo_cliente" tipo="email"
               value={formulario.correo_cliente} onChange={handleChange}
               error={errores.correo_cliente} placeholder="cliente@correo.com"
+              maxLength={LIMITES_CLIENTE.correo_cliente}
             />
           </div>
 
@@ -275,6 +306,7 @@ export default function ClientesPage() {
             label="Dirección" name="direccion_cliente" value={formulario.direccion_cliente}
             onChange={handleChange} error={errores.direccion_cliente}
             placeholder="Calle 10 # 20-30, Bogotá"
+            maxLength={LIMITES_CLIENTE.direccion_cliente}
           />
 
           <div style={{ display: "flex", gap: 10 }}>

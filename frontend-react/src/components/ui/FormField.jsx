@@ -57,6 +57,12 @@ export default function FormField ({
     hint,
     placeholder,
     maxLength,
+    // Límites numéricos opcionales (solo se usan con tipo="number"): el
+    // backend también valida, pero guiar desde el input evita un viaje al
+    // servidor que terminaría en error.
+    min,
+    max,
+    paso,
     as = "input", // "input" | "select" | "textarea"
     opciones = [], // usado cuando as === "select"
 }) {
@@ -76,6 +82,9 @@ export default function FormField ({
             onChange={onChange}
             placeholder={placeholder}
             maxLength={maxLength}
+            min={min}
+            max={max}
+            step={paso}
         />
     );
 

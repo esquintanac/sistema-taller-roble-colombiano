@@ -43,6 +43,26 @@ class ClienteService:
             if not re.match(patron, correo):
                 errores.append("El correo electronico no tiene un formato valido.")
 
+        # Limites de longitud por campo, por debajo del tamano real de las
+        # columnas de MySQL (Nombre/Apellido/Direccion 255, documento 30,
+        # correo 100): sin esto, un texto largo llegaria al INSERT y MySQL lo
+        # rechazaria con "Data too long". El formulario aplica los mismos
+        # limites (ClientesPage.jsx), pero se repiten aqui por si alguien
+        # llama a la API directamente.
+        limites = {
+            "nombre": 50,
+            "apellido": 50,
+            "numero_documento_identificacion": 20,
+            "correo_cliente": 40,
+            "direccion_cliente": 100,
+        }
+        for campo, maximo in limites.items():
+            valor = str(datos.get(campo, "") or "")
+            if len(valor) > maximo:
+                errores.append(
+                    f"El campo {campo} no puede superar los {maximo} caracteres."
+                )
+
         return errores
 
     @classmethod

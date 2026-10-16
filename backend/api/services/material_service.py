@@ -12,6 +12,29 @@ from src.dao.material_dao import MaterialDAO
 from src.models.material import Material
 
 
+# Listas cerradas que coinciden con los <option> del formulario
+# (frontend-react/src/services/materialesService.js). El tipo y la unidad no
+# son texto libre porque el sistema los usa como reglas: las láminas se
+# filtran con el tipo "tablero" (AdminDesignDetailPage) y el costo se
+# interpreta según la unidad. Se comparan en minúsculas para que una
+# diferencia de mayúsculas no invalide un dato legítimo.
+TIPOS_MATERIAL = (
+    "tablero", "herraje", "ferreteria", "adhesivo", "pintura y barniz",
+    "madera", "herramienta", "servicio", "otro",
+)
+UNIDADES_MEDIDA = (
+    "unidad", "par", "juego", "caja", "metro", "metro lineal",
+    "metro cuadrado", "lamina", "rollo", "kilogramo", "litro",
+)
+
+# Límites acordados por el negocio; todos por debajo de las columnas reales
+# de MySQL (decimal(10,2) admite hasta 99.999.999,99, así que no hay choque).
+LIMITE_NOMBRE = 60
+TOPE_COSTO = 9999999.99  # 7 dígitos + 2 decimales
+TOPE_STOCK = 999999.99  # 6 dígitos
+TOPE_STOCK_MINIMO = 9999.99  # 5 dígitos
+
+
 class MaterialService:
     dao = MaterialDAO()
 
@@ -21,21 +44,34 @@ class MaterialService:
         errores = []
 
         if not es_actualizacion or "nombre_material" in datos:
-            if not datos.get("nombre_material", "").strip():
+            nombre = str(datos.get("nombre_material", "") or "").strip()
+            if not nombre:
                 errores.append("El nombre del material es obligatorio.")
+            elif len(nombre) > LIMITE_NOMBRE:
+                errores.append(
+                    f"El nombre del material no puede superar los {LIMITE_NOMBRE} caracteres."
+                )
 
         if not es_actualizacion or "tipo_material" in datos:
-            if not datos.get("tipo_material", "").strip():
+            tipo = str(datos.get("tipo_material", "") or "").strip()
+            if not tipo:
                 errores.append("El tipo de material es obligatorio.")
+            elif tipo.lower() not in TIPOS_MATERIAL:
+                errores.append("El tipo de material no esta en la lista de opciones.")
 
         if not es_actualizacion or "unidad_medida" in datos:
-            if not datos.get("unidad_medida", "").strip():
+            unidad = str(datos.get("unidad_medida", "") or "").strip()
+            if not unidad:
                 errores.append("La unidad de medida es obligatoria.")
+            elif unidad.lower() not in UNIDADES_MEDIDA:
+                errores.append("La unidad de medida no esta en la lista de opciones.")
 
         try:
             costo = float(datos.get("costo_unitario", -1))
             if costo <= 0:
                 errores.append("El costo unitario debe ser mayor a 0.")
+            elif costo > TOPE_COSTO:
+                errores.append("El costo unitario no puede superar 9.999.999,99.")
         except (ValueError, TypeError):
             errores.append("El costo unitario debe ser un número válido.")
 
@@ -43,8 +79,19 @@ class MaterialService:
             stock = float(datos.get("stock", -1))
             if stock < 0:
                 errores.append("El stock no puede ser negativo.")
+            elif stock > TOPE_STOCK:
+                errores.append("El stock no puede superar 999.999,99.")
         except (ValueError, TypeError):
             errores.append("El stock debe ser un número válido.")
+
+        try:
+            stock_minimo = float(datos.get("stock_minimo", 0))
+            if stock_minimo < 0:
+                errores.append("El stock minimo no puede ser negativo.")
+            elif stock_minimo > TOPE_STOCK_MINIMO:
+                errores.append("El stock minimo no puede superar 9.999,99.")
+        except (ValueError, TypeError):
+            errores.append("El stock minimo debe ser un número válido.")
 
         return errores
 
