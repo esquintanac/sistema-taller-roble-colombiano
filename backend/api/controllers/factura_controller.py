@@ -33,7 +33,16 @@ def facturas_lista(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    metodo_pago = request.data.get("metodo_pago", "")
+    # El método de pago es obligatorio: una factura sin método dejaba el
+    # registro incompleto (el selector del frontend puede quedarse en la
+    # opción vacía "Selecciona una opción").
+    metodo_pago = (request.data.get("metodo_pago") or "").strip()
+    if not metodo_pago:
+        return Response(
+            {"exito": False, "mensaje": "metodo_pago es obligatorio."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     resultado = FacturaService.generar_factura(id_modelo, metodo_pago)
 
     if "error" in resultado:

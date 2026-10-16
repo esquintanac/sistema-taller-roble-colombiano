@@ -77,8 +77,14 @@ export default function FacturasPage() {
   // Generación de una factura nueva.
   const [disenos, setDisenos] = useState([]);
   const [idModelo, setIdModelo] = useState("");
-  const [metodoPago, setMetodoPago] = useState(METODOS_PAGO[0].value);
+  // Arranca sin método elegido: es un campo obligatorio y no debe quedar
+  // "Efectivo" preseleccionado como si el taller decidiera el pago solo.
+  const [metodoPago, setMetodoPago] = useState("");
   const [generando, setGenerando] = useState(false);
+  // Errores por campo del formulario de generación (diseño y método de
+  // pago son obligatorios): van en rojo bajo cada campo y también en el
+  // modal de validación, igual que en materiales y clientes.
+  const [errores, setErrores] = useState({});
 
   // Tipo de cambio (Fase 7) para mostrar los totales también en dólares.
   const divisa = useTipoCambio();
@@ -87,6 +93,12 @@ export default function FacturasPage() {
   // que al abrir una factura (y tras generarla) se lleva la vista hasta él,
   // igual que el scroll automático de materiales y clientes.
   const panelDetalleRef = useRef(null);
+
+  // Al corregir un campo se borra su error, igual que en materiales y
+  // clientes, para no dejar marcas rojas de validaciones ya resueltas.
+  function limpiarError(campo) {
+    setErrores((prev) => ({ ...prev, [campo]: undefined }));
+  }
 
   async function cargarFacturas() {
     try {
@@ -150,14 +162,25 @@ export default function FacturasPage() {
     // el backend recibiría null y respondería "id_modelo es obligatorio", así que
     // se valida aquí en vez de dejar que la petición salga y falle.
     const modeloElegido = Number(idModelo);
+    // Tanto el diseño como el método de pago son obligatorios. El backend
+    // también los valida, pero avisar aquí evita el viaje al servidor.
+    const nuevosErrores = {};
     if (!Number.isInteger(modeloElegido) || modeloElegido <= 0) {
+      nuevosErrores.modelo = "Elige el diseño que se va a facturar.";
+    }
+    if (!metodoPago) {
+      nuevosErrores.metodo = "Elige el método de pago de la factura.";
+    }
+    if (Object.keys(nuevosErrores).length > 0) {
+      setErrores(nuevosErrores);
       setMensaje({
         tipo: "error",
-        titulo: "Falta elegir el diseño",
-        texto: "Selecciona el modelo al que se le va a facturar.",
+        titulo: "Revisa el formulario",
+        texto: "El diseño y el método de pago son obligatorios para generar la factura.",
       });
       return;
     }
+    setErrores({});
 
     setGenerando(true);
     setMensaje(null);
@@ -272,9 +295,14 @@ export default function FacturasPage() {
             <div className="grid-2">
               <FormField
                 label="Diseño a facturar"
+                requerido
                 as="select"
                 value={idModelo}
-                onChange={(e) => setIdModelo(e.target.value)}
+                error={errores.modelo}
+                onChange={(e) => {
+                  setIdModelo(e.target.value);
+                  limpiarError("modelo");
+                }}
                 opciones={disenos.map((d) => ({
                   // El value va como texto porque lo que llega del <select> siempre
                   // es un string; Number() en handleGenerar lo devuelve a entero.
@@ -291,9 +319,14 @@ export default function FacturasPage() {
               />
               <FormField
                 label="Método de pago"
+                requerido
                 as="select"
                 value={metodoPago}
-                onChange={(e) => setMetodoPago(e.target.value)}
+                error={errores.metodo}
+                onChange={(e) => {
+                  setMetodoPago(e.target.value);
+                  limpiarError("metodo");
+                }}
                 opciones={METODOS_PAGO}
               />
             </div>
