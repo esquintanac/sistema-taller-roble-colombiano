@@ -13,7 +13,7 @@ import materialesService, {
 import DataTable from "../ui/DataTable";
 import FormField from "../ui/FormField";
 import Button from "../ui/Button";
-import Alert from "../ui/Alert";
+import Modal from "../ui/Modal";
 import Card from "../ui/Card";
 // pesos vive en utils/descargas para que el costo se vea igual en todo el
 // sistema (aquí y en el detalle del administrador) sin duplicar el formato.
@@ -52,6 +52,8 @@ export default function MaterialesCrud() {
     const [idEditando, setIdEditando] = useState(null);
     const [errores, setErrores] = useState({});
     const [mensaje, setMensaje] = useState(null);
+    // Material pendiente de confirmación en el modal de eliminación.
+    const [materialAEliminar, setMaterialAEliminar] = useState(null);
     const [cargando, setCargando] = useState(true);
     // Referencia al <form> del Card: al editar desde la tabla (que queda
     // debajo) la vista se desplaza sola hasta el formulario.
@@ -140,7 +142,17 @@ export default function MaterialesCrud() {
     async function handleSubmit(e) {
         e.preventDefault();
         setMensaje(null);
-        if (!validar()) return;
+        if (!validar()) {
+            // El resultado también se informa en ventana emergente (así lo
+            // pidió el instructor); los detalles de cada campo quedan en
+            // rojo debajo de ellos, para corregir sin adivinar.
+            setMensaje({
+                tipo: "error",
+                titulo: "Revisa el formulario",
+                texto: "Hay campos vacíos o con errores. Corrígelos antes de guardar.",
+            });
+            return;
+        }
         try {
             if (idEditando) {
                 await materialesService.actualizar(idEditando, formulario);
@@ -185,11 +197,23 @@ export default function MaterialesCrud() {
         formularioRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
-    async function handleEliminar(id) {
-        if (!window.confirm("¿Seguro que quieres eliminar este material?")) return;
+    // Eliminar ya no usa el window.confirm() del navegador (ese aviso
+    // genérico es el de cualquier página): se pide confirmación en el
+    // propio modal del sistema, con el nombre del material a la vista.
+    function handleEliminar(material) {
+        setMaterialAEliminar(material);
+    }
+
+    async function confirmarEliminacion() {
+        const material = materialAEliminar;
+        setMaterialAEliminar(null);
         try {
-            await materialesService.eliminar(id);
-            setMensaje({ tipo: "success", texto: "Material eliminado correctamente." });
+            await materialesService.eliminar(material.id_material);
+            setMensaje({
+                tipo: "success",
+                titulo: "Material eliminado",
+                texto: `El material "${material.nombre_material}" se eliminó correctamente.`,
+            });
             cargarMateriales();
         } catch {
             setMensaje({ tipo: "error", texto: "No se pudo eliminar el material." });
@@ -200,7 +224,7 @@ export default function MaterialesCrud() {
         <div>
             <h2>Gestión de materiales</h2>
 
-            {mensaje && <Alert tipo={mensaje.tipo} mensaje={mensaje.texto} />}
+
 
             <Card className="mb-md">
                 <h3>{idEditando ? "Editar material": "Registrar nuevo material"}</h3>
@@ -234,7 +258,7 @@ export default function MaterialesCrud() {
                 renderAcciones={(m) => (
                     <div style={{ display: "flex", gap: 6 }}>
                         <Button tamano="sm" variante="secondary" onClick={() => iniciarEdicion(m)}>Editar</Button>
-                        <Button tamano="sm" variante="danger" onClick={() => handleEliminar(m.id_material)}>Eliminar</Button>
+                        <Button tamano="sm" variante="danger" onClick={() => handleEliminar(m)}>Eliminar</Button>
                     </div>
                 )}
                 />
@@ -245,6 +269,29 @@ export default function MaterialesCrud() {
                     Tipo de cambio de hoy: {textoDivisa(divisa)}. Los costos de la
                     tabla se muestran en pesos colombianos.
                 </p>
+            )}
+
+            {/* Resultado de guardar/eliminar y confirmación de borrado:
+                ventana emergente en lugar de la etiqueta de arriba del
+                formulario (indicación del instructor). */}
+            {mensaje && (
+                <Modal
+                    tipo={mensaje.tipo}
+                    titulo={mensaje.titulo}
+                    mensaje={mensaje.texto}
+                    onAceptar={() => setMensaje(null)}
+                />
+            )}
+
+            {materialAEliminar && (
+                <Modal
+                    tipo="confirm"
+                    titulo="Eliminar material"
+                    mensaje={`¿Seguro que quieres eliminar "${materialAEliminar.nombre_material}"? Esta acción no se puede deshacer.`}
+                    textoConfirmar="Eliminar"
+                    onConfirmar={confirmarEliminacion}
+                    onCancelar={() => setMaterialAEliminar(null)}
+                />
             )}
         </div>
     );

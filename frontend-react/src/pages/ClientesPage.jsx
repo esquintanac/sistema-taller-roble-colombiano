@@ -12,7 +12,7 @@ import { mensajeDeError } from "../utils/descargas";
 import DataTable from "../components/ui/DataTable";
 import FormField from "../components/ui/FormField";
 import Button from "../components/ui/Button";
-import Alert from "../components/ui/Alert";
+import Modal from "../components/ui/Modal";
 import Card from "../components/ui/Card";
 import StatCard from "../components/ui/StatCard";
 import Spinner from "../components/ui/Spinner";
@@ -88,6 +88,8 @@ export default function ClientesPage() {
   const [mensaje, setMensaje] = useState(null);
   const [busqueda, setBusqueda] = useState("");
   const [guardando, setGuardando] = useState(false);
+  // Cliente pendiente de confirmación en el modal de eliminación.
+  const [clienteAEliminar, setClienteAEliminar] = useState(null);
   // Referencia al <form> del Card: al editar desde la tabla (que queda
   // debajo) la vista se desplaza sola hasta el formulario.
   const formularioRef = useRef(null);
@@ -150,7 +152,16 @@ export default function ClientesPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setMensaje(null);
-    if (!validar()) return;
+    if (!validar()) {
+      // El resultado también se informa en ventana emergente (indicación
+      // del instructor); los detalles siguen en rojo bajo cada campo.
+      setMensaje({
+        tipo: "error",
+        titulo: "Revisa el formulario",
+        texto: "Hay campos vacíos o con errores. Corrígelos antes de guardar.",
+      });
+      return;
+    }
 
     setGuardando(true);
     try {
@@ -203,13 +214,21 @@ export default function ClientesPage() {
     setErrores({});
   }
 
-  async function handleEliminar(cliente) {
+  // Eliminar ya no usa el window.confirm() del navegador (ese aviso
+  // genérico es el de cualquier página): se pide confirmación en el
+  // propio modal del sistema, con el nombre del cliente a la vista.
+  function handleEliminar(cliente) {
+    setClienteAEliminar(cliente);
+  }
+
+  async function confirmarEliminacion() {
+    const cliente = clienteAEliminar;
     const nombre = `${cliente.nombre} ${cliente.apellido}`;
-    if (!window.confirm(`¿Eliminar a ${nombre}? Esta acción no se puede deshacer.`)) return;
+    setClienteAEliminar(null);
 
     try {
       await clientesService.eliminar(cliente.id_cliente);
-      setMensaje({ tipo: "success", texto: `${nombre} fue eliminado.` });
+      setMensaje({ tipo: "success", titulo: "Cliente eliminado", texto: `${nombre} fue eliminado.` });
       // Si se estaba editando justo a ese cliente, el formulario se limpia.
       if (idEditando === cliente.id_cliente) cancelarEdicion();
       cargarClientes();
@@ -258,8 +277,27 @@ export default function ClientesPage() {
         <StatCard icono="📞" etiqueta="Con teléfono" valor={conTelefono} />
       </div>
 
+      {/* Resultado de guardar/eliminar y confirmación de borrado: ventana
+          emergente en lugar de la etiqueta de arriba del formulario
+          (indicación del instructor). */}
       {mensaje && (
-        <Alert tipo={mensaje.tipo} titulo={mensaje.titulo} mensaje={mensaje.texto} />
+        <Modal
+          tipo={mensaje.tipo}
+          titulo={mensaje.titulo}
+          mensaje={mensaje.texto}
+          onAceptar={() => setMensaje(null)}
+        />
+      )}
+
+      {clienteAEliminar && (
+        <Modal
+          tipo="confirm"
+          titulo="Eliminar cliente"
+          mensaje={`¿Eliminar a ${clienteAEliminar.nombre} ${clienteAEliminar.apellido}? Esta acción no se puede deshacer.`}
+          textoConfirmar="Eliminar"
+          onConfirmar={confirmarEliminacion}
+          onCancelar={() => setClienteAEliminar(null)}
+        />
       )}
 
       <Card className="mb-md">

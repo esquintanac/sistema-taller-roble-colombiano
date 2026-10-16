@@ -350,6 +350,21 @@ html, body, #root {
   margin-bottom: 8px;
 }
 
+/* Variantes del icono para los modales de resultado y de confirmacion
+   (materiales y clientes): verde en exito, rojo en error y en la
+   confirmacion de borrado. Van despues de la regla base para que el color
+   por defecto (ambar del aviso de sesion) quede sobrescrito. */
+.modal-icono-exito {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.modal-icono-error,
+.modal-icono-confirm {
+  background: var(--error-bg);
+  color: var(--error);
+}
+
 .modal-aviso-texto {
   color: var(--tx-sec);
   font-size: 14px;
