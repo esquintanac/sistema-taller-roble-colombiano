@@ -10,6 +10,9 @@ export default function Button({
   disabled = false,
   ref,
   children,
+  // Cualquier atributo extra (aria-*, title…) pasa al <button> sin tener
+  // que declararlo uno a uno: lo usa, por ejemplo, MenuAcciones.
+  ...resto
 }) {
   const clases = [
     "btn",
@@ -25,7 +28,7 @@ export default function Button({
     // prop normal, así que basta con recibirla y pasarla; sin esto, quien
     // necesite enfocar el botón (el aviso de sesión, por ejemplo) recibiría
     // una ref siempre vacía.
-    <button ref={ref} type={tipo} className={clases} onClick={onClick} disabled={disabled}>
+    <button ref={ref} type={tipo} className={clases} onClick={onClick} disabled={disabled} {...resto}>
       {children}
     </button>
   );

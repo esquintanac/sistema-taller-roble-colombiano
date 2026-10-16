@@ -370,6 +370,51 @@ html, body, #root {
   color: var(--info);
 }
 
+/* ============================================================
+   Menú de acciones por fila (facturas): un botón por fila que
+   despliega las opciones en vez de apilar cinco botones.
+   ============================================================ */
+.menu-acciones { position: relative; display: inline-block; }
+
+.menu-acciones-lista {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  min-width: 215px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: 0 10px 24px rgba(20, 38, 36, 0.16);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-acciones-item {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 9px 10px;
+  border-radius: var(--r-md);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx-main);
+  cursor: pointer;
+}
+
+.menu-acciones-item:hover,
+.menu-acciones-item:focus-visible {
+  background: var(--bg-alt);
+  outline: none;
+}
+
+.menu-acciones-peligro { color: var(--error); }
+
+.menu-acciones-peligro:hover,
+.menu-acciones-peligro:focus-visible { background: var(--error-bg); }
+
 .modal-aviso-texto {
   color: var(--tx-sec);
   font-size: 14px;

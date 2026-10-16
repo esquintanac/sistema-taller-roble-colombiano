@@ -23,6 +23,7 @@ import FormField from "../components/ui/FormField";
 import Button from "../components/ui/Button";
 import PanelFactura from "../components/admin/PanelFactura";
 import Modal from "../components/ui/Modal";
+import MenuAcciones from "../components/ui/MenuAcciones";
 import Card from "../components/ui/Card";
 import StatCard from "../components/ui/StatCard";
 import Spinner from "../components/ui/Spinner";
@@ -465,25 +466,29 @@ export default function FacturasPage() {
                   : "Genera la primera factura desde el formulario de arriba."
               }
               renderAcciones={(factura) => (
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <Button tamano="sm" variante="secondary" onClick={() => verDetalle(factura)}>
-                    Ver detalle
-                  </Button>
-                  <Button tamano="sm" variante="primary" onClick={() => descargarPdfDe(factura)}>
-                    PDF
-                  </Button>
-                  <Button tamano="sm" variante="secondary" onClick={() => abrirEdicion(factura)}>
-                    Editar
-                  </Button>
-                  {factura.estado_pago === "Pendiente" && (
-                    <Button tamano="sm" variante="success" onClick={() => setFacturaAPagar(factura)}>
-                      Pagada
-                    </Button>
-                  )}
-                  <Button tamano="sm" variante="danger" onClick={() => setFacturaAEliminar(factura)}>
-                    Eliminar
-                  </Button>
-                </div>
+                // Un solo botón por fila: las cinco opciones (detalle, PDF,
+                // editar, pagada y eliminar) viven dentro del menú para no
+                // ensuciar la tabla con botones seguidos.
+                <MenuAcciones
+                  items={[
+                    { etiqueta: "Ver detalle", accion: () => verDetalle(factura) },
+                    { etiqueta: "Descargar PDF", accion: () => descargarPdfDe(factura) },
+                    { etiqueta: "Editar método de pago", accion: () => abrirEdicion(factura) },
+                    ...(factura.estado_pago === "Pendiente"
+                      ? [
+                          {
+                            etiqueta: "Marcar como pagada",
+                            accion: () => setFacturaAPagar(factura),
+                          },
+                        ]
+                      : []),
+                    {
+                      etiqueta: "Eliminar factura",
+                      peligro: true,
+                      accion: () => setFacturaAEliminar(factura),
+                    },
+                  ]}
+                />
               )}
             />
           )}
