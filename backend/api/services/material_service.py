@@ -27,12 +27,15 @@ UNIDADES_MEDIDA = (
     "metro cuadrado", "lamina", "rollo", "kilogramo", "litro",
 )
 
-# Límites acordados por el negocio; todos por debajo de las columnas reales
-# de MySQL (decimal(10,2) admite hasta 99.999.999,99, así que no hay choque).
+# Límites acordados por el negocio. Precios y stock se manejan en PESOS
+# ENTEROS (los decimales casi no se usan en Colombia en estas cifras): los
+# tres topes son enteros y validar_datos rechaza cualquier valor con
+# parte decimal. Todos quedan por debajo de las columnas reales de MySQL
+# (decimal(10,2) admite hasta 99.999.999,99, así que no hay choque).
 LIMITE_NOMBRE = 60
-TOPE_COSTO = 9999999.99  # 7 dígitos + 2 decimales
-TOPE_STOCK = 999999.99  # 6 dígitos
-TOPE_STOCK_MINIMO = 9999.99  # 5 dígitos
+TOPE_COSTO = 9999999  # 7 dígitos
+TOPE_STOCK = 999999  # 6 dígitos
+TOPE_STOCK_MINIMO = 99999  # 5 dígitos
 
 
 class MaterialService:
@@ -71,27 +74,33 @@ class MaterialService:
             if costo <= 0:
                 errores.append("El costo unitario debe ser mayor a 0.")
             elif costo > TOPE_COSTO:
-                errores.append("El costo unitario no puede superar 9.999.999,99.")
+                errores.append("El costo unitario no puede superar 9.999.999.")
+            elif costo != int(costo):
+                errores.append("El costo unitario debe ser un numero entero, sin decimales.")
         except (ValueError, TypeError):
-            errores.append("El costo unitario debe ser un número válido.")
+            errores.append("El costo unitario debe ser un numero valido.")
 
         try:
             stock = float(datos.get("stock", -1))
             if stock < 0:
                 errores.append("El stock no puede ser negativo.")
             elif stock > TOPE_STOCK:
-                errores.append("El stock no puede superar 999.999,99.")
+                errores.append("El stock no puede superar 999.999.")
+            elif stock != int(stock):
+                errores.append("El stock debe ser un numero entero, sin decimales.")
         except (ValueError, TypeError):
-            errores.append("El stock debe ser un número válido.")
+            errores.append("El stock debe ser un numero valido.")
 
         try:
             stock_minimo = float(datos.get("stock_minimo", 0))
             if stock_minimo < 0:
                 errores.append("El stock minimo no puede ser negativo.")
             elif stock_minimo > TOPE_STOCK_MINIMO:
-                errores.append("El stock minimo no puede superar 9.999,99.")
+                errores.append("El stock minimo no puede superar 99.999.")
+            elif stock_minimo != int(stock_minimo):
+                errores.append("El stock minimo debe ser un numero entero, sin decimales.")
         except (ValueError, TypeError):
-            errores.append("El stock minimo debe ser un número válido.")
+            errores.append("El stock minimo debe ser un numero valido.")
 
         return errores
 

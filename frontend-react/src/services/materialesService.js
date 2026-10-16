@@ -43,16 +43,49 @@ export const UNIDADES_MEDIDA = [
   { value: "Litro", label: "Litro" },
 ];
 
-// Límites acordados por el negocio, todos por debajo del tamaño real de las
-// columnas de MySQL (decimal(10,2) admite hasta 99.999.999,99, así que
-// ninguna restricción choca con la base). El backend los repite en
+// Límites de escritura del formulario de materiales. Precios y stock son
+// PESOS ENTEROS: los decimales casi no se usan en Colombia en estas cifras,
+// así que los tres campos numéricos solo aceptan dígitos y cortan la
+// escritura al llegar al tope (el mismo efecto que maxLength en el nombre).
+// Todos los topes quedan por debajo de las columnas reales de MySQL
+// (decimal(10,2) admite hasta 99.999.999,99); el backend los repite en
 // MaterialService para que nadie salte la regla llamando a la API directo.
 export const LIMITES_MATERIAL = {
   nombre: 60, // entre 40 y 100: se eligió 60 (los nombres actuales no pasan de 24)
-  costoMaximo: 9999999.99, // 7 dígitos + 2 decimales
-  stockMaximo: 999999.99, // 6 dígitos
-  stockMinimoMaximo: 9999.99, // 5 dígitos
+  costoMaximo: 9999999, // 7 dígitos
+  stockMaximo: 999999, // 6 dígitos
+  stockMinimoMaximo: 99999, // 5 dígitos
 };
+
+// Dígitos de la parte entera de cada tope, derivados del tope mismo
+// (9999999 -> 7, 999999 -> 6, 99999 -> 5): recortar a esa cantidad de
+// dígitos garantiza que el valor nunca supere el tope numérico, porque los
+// tres topes son todos 9 (10^n - 1). maxLength del input corta primero;
+// este recorte es la red de seguridad para pegados o valores programáticos.
+const DIGITOS_ENTEROS = {
+  costo_unitario: String(Math.trunc(LIMITES_MATERIAL.costoMaximo)).length,
+  stock: String(Math.trunc(LIMITES_MATERIAL.stockMaximo)).length,
+  stock_minimo: String(Math.trunc(LIMITES_MATERIAL.stockMinimoMaximo)).length,
+};
+
+/**
+ * Filtra lo que se escribe en un campo numérico.
+ *
+ * @param {string} nombreCampo name del input; los que no son numéricos
+ *                             (nombre, selects) pasan tal cual.
+ * @param {string} valor       valor crudo del evento onChange.
+ * @returns {string|null}      valor a guardar recortado a los dígitos del
+ *                             tope; null si no es un entero válido
+ *                             ("1500.5", "-", "1e5", letras), lo que hace
+ *                             que el campo conserve el valor anterior.
+ */
+export function limitarNumero(nombreCampo, valor) {
+  const digitos = DIGITOS_ENTEROS[nombreCampo];
+  if (digitos === undefined) return valor;
+  if (valor === "") return "";
+  if (!/^\d+$/.test(valor)) return null;
+  return valor.length > digitos ? valor.slice(0, digitos) : valor;
+}
 
 const materialesService = {
     listar: async () => {

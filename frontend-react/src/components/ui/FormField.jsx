@@ -57,6 +57,10 @@ export default function FormField ({
     hint,
     placeholder,
     maxLength,
+    // Teclado numérico en móvil sin cambiar el tipo de campo: los campos
+    // numéricos de Materiales son texto con este atributo para que maxLength
+    // (que solo aplica a text) corte la escritura como en cualquier otro.
+    inputMode,
     // Límites numéricos opcionales (solo se usan con tipo="number"): el
     // backend también valida, pero guiar desde el input evita un viaje al
     // servidor que terminaría en error.
@@ -82,6 +86,7 @@ export default function FormField ({
             onChange={onChange}
             placeholder={placeholder}
             maxLength={maxLength}
+            inputMode={inputMode}
             min={min}
             max={max}
             step={paso}

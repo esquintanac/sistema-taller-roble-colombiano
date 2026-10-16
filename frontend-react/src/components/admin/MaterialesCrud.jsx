@@ -8,6 +8,7 @@ import materialesService, {
     TIPOS_MATERIAL,
     UNIDADES_MEDIDA,
     LIMITES_MATERIAL,
+    limitarNumero,
 } from "../../services/materialesService";
 import DataTable from "../ui/DataTable";
 import FormField from "../ui/FormField";
@@ -76,7 +77,13 @@ export default function MaterialesCrud() {
     }
 
     function handleChange(e) {
-        setFormulario({ ...formulario, [e.target.name]: e.target.value });
+        // Los campos numéricos son texto con teclado numérico: maxLength
+        // corta al número de dígitos del tope (igual que en el nombre) y
+        // limitarNumero descarta todo lo que no sean dígitos enteros
+        // (punto decimal, signos, letras); si la tecla no pasa, el campo
+        // conserva el valor anterior.
+        const valor = limitarNumero(e.target.name, e.target.value) ?? formulario[e.target.name];
+        setFormulario({ ...formulario, [e.target.name]: valor });
         // El error de un campo desaparece en cuanto se corrige.
         if (errores[e.target.name]) {
             setErrores({ ...errores, [e.target.name]: undefined });
@@ -103,21 +110,27 @@ export default function MaterialesCrud() {
         if (formulario.costo_unitario !== "" && (!Number.isFinite(costo) || costo <= 0)) {
             nuevos.costo_unitario = "El costo debe ser un número mayor a 0";
         } else if (costo > LIMITES_MATERIAL.costoMaximo) {
-            nuevos.costo_unitario = "El costo no puede superar 9.999.999,99";
+            nuevos.costo_unitario = "El costo no puede superar 9.999.999";
+        } else if (costo !== Math.trunc(costo)) {
+            nuevos.costo_unitario = "El costo no admite decimales";
         }
 
         const stock = Number(formulario.stock);
         if (formulario.stock !== "" && (!Number.isFinite(stock) || stock < 0)) {
             nuevos.stock = "El stock no puede ser negativo";
         } else if (stock > LIMITES_MATERIAL.stockMaximo) {
-            nuevos.stock = "El stock no puede superar 999.999,99";
+            nuevos.stock = "El stock no puede superar 999.999";
+        } else if (stock !== Math.trunc(stock)) {
+            nuevos.stock = "El stock no admite decimales";
         }
 
         const minimo = Number(formulario.stock_minimo);
         if (formulario.stock_minimo !== "" && (!Number.isFinite(minimo) || minimo < 0)) {
             nuevos.stock_minimo = "El stock mínimo no puede ser negativo";
         } else if (minimo > LIMITES_MATERIAL.stockMinimoMaximo) {
-            nuevos.stock_minimo = "El stock mínimo no puede superar 9.999,99";
+            nuevos.stock_minimo = "El stock mínimo no puede superar 99.999";
+        } else if (minimo !== Math.trunc(minimo)) {
+            nuevos.stock_minimo = "El stock mínimo no admite decimales";
         }
 
         setErrores(nuevos);
@@ -154,7 +167,16 @@ export default function MaterialesCrud() {
     }
 
     function iniciarEdicion(material) {
-        setFormulario(material);
+        // Los precios y stocks son enteros: si un registro heredado trae
+        // decimales (o NULL en stock_minimo), al cargarlo se redondea para
+        // que el formulario muestre exactamente lo que se podrá guardar.
+        const entero = (v) => String(Math.round(Number(v ?? 0)));
+        setFormulario({
+            ...material,
+            costo_unitario: entero(material.costo_unitario),
+            stock: entero(material.stock),
+            stock_minimo: entero(material.stock_minimo),
+        });
         setIdEditando(material.id_material);
         setErrores({});
         setMensaje(null);
@@ -186,9 +208,9 @@ export default function MaterialesCrud() {
                     <FormField label="Nombre del material" name="nombre_material" value={formulario.nombre_material} onChange={handleChange} error={errores.nombre_material} requerido maxLength={LIMITES_MATERIAL.nombre}/>
                     <FormField label="Tipo del material" name="tipo_material" as="select" value={formulario.tipo_material} onChange={handleChange} error={errores.tipo_material} requerido opciones={opcionesConActual(formulario.tipo_material, TIPOS_MATERIAL)}/>
                     <FormField label="Unidad de medida" name="unidad_medida" as="select" value={formulario.unidad_medida} onChange={handleChange} error={errores.unidad_medida} requerido opciones={opcionesConActual(formulario.unidad_medida, UNIDADES_MEDIDA)}/>
-                    <FormField label="Costo unitario" name="costo_unitario" value={formulario.costo_unitario} tipo="number" min="0.01" max={LIMITES_MATERIAL.costoMaximo} paso="0.01" onChange={handleChange} error={errores.costo_unitario} requerido/>
-                    <FormField label="Stock" name="stock" value={formulario.stock} tipo="number" min="0" max={LIMITES_MATERIAL.stockMaximo} paso="0.01" onChange={handleChange} error={errores.stock} requerido/>
-                    <FormField label="Stock minimo" name="stock_minimo" value={formulario.stock_minimo} tipo="number" min="0" max={LIMITES_MATERIAL.stockMinimoMaximo} paso="0.01" onChange={handleChange} error={errores.stock_minimo} requerido/>
+                    <FormField label="Costo unitario" name="costo_unitario" value={formulario.costo_unitario} tipo="text" inputMode="numeric" maxLength={String(LIMITES_MATERIAL.costoMaximo).length} onChange={handleChange} error={errores.costo_unitario} hint={`Sin decimales · máximo ${LIMITES_MATERIAL.costoMaximo.toLocaleString("es-CO")}`} requerido/>
+                    <FormField label="Stock" name="stock" value={formulario.stock} tipo="text" inputMode="numeric" maxLength={String(LIMITES_MATERIAL.stockMaximo).length} onChange={handleChange} error={errores.stock} hint={`Sin decimales · máximo ${LIMITES_MATERIAL.stockMaximo.toLocaleString("es-CO")}`} requerido/>
+                    <FormField label="Stock minimo" name="stock_minimo" value={formulario.stock_minimo} tipo="text" inputMode="numeric" maxLength={String(LIMITES_MATERIAL.stockMinimoMaximo).length} onChange={handleChange} error={errores.stock_minimo} hint={`Sin decimales · máximo ${LIMITES_MATERIAL.stockMinimoMaximo.toLocaleString("es-CO")}`} requerido/>
 
                     <Button tipo="submit" variante="primary">
                         {idEditando ? "Guardar cambios" : "Registrar material"}
