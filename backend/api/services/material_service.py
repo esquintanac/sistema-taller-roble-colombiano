@@ -14,10 +14,11 @@ from src.models.material import Material
 
 # Listas cerradas que coinciden con los <option> del formulario
 # (frontend-react/src/services/materialesService.js). El tipo y la unidad no
-# son texto libre porque el sistema los usa como reglas: las láminas se
-# filtran con el tipo "tablero" (AdminDesignDetailPage) y el costo se
-# interpreta según la unidad. Se comparan en minúsculas para que una
-# diferencia de mayúsculas no invalide un dato legítimo.
+# son texto libre porque el sistema los usa como reglas: el tipo clasifica el
+# inventario (el detalle del diseño lista TODOS los materiales, sin filtrar
+# por tipo) y el costo se interpreta según la unidad. Se comparan en
+# minúsculas para que una diferencia de mayúsculas no invalide un dato
+# legítimo.
 TIPOS_MATERIAL = (
     "tablero", "herraje", "ferreteria", "adhesivo", "pintura y barniz",
     "madera", "herramienta", "servicio", "otro",

@@ -11,12 +11,12 @@
 import api from "./api";
 
 // Opciones cerradas para el formulario de materiales. El tipo y la unidad
-// no son texto libre porque el sistema los usa como reglas: las láminas del
-// panel de administración se filtran con el tipo "tablero" (ver
-// AdminDesignDetailPage), y el costo se interpreta según la unidad (metro,
-// caja, unidad…). Los values repiten los valores que ya existen en la base
-// (Tablero, Ferreteria, Herraje, Lamina…) para que los materiales
-// registrados antes de esta restricción sigan coincidiendo.
+// no son texto libre porque el sistema los usa como reglas: el tipo sirve
+// para clasificar el inventario (el detalle del diseño lista TODOS los
+// materiales, sin filtrar por tipo) y el costo se interpreta según la
+// unidad (metro, caja, unidad…). Los values repiten los valores que ya
+// existen en la base (Tablero, Ferreteria, Herraje, Lamina…) para que los
+// materiales registrados antes de esta restricción sigan coincidiendo.
 export const TIPOS_MATERIAL = [
   { value: "Tablero", label: "Tablero (láminas y paneles)" },
   { value: "Herraje", label: "Herraje (bisagras, correderas, manijas)" },

@@ -152,17 +152,16 @@ export default function AdminDesignDetailPage() {
       }
 
       // Solo cuando no hay costo real se ofrece asociar la melanina. Se
-      // listan las láminas del inventario para que el administrador elija
-      // una explícitamente: antes se tomaba "la primera de tipo Tablero",
-      // es decir, un costo que nadie había decidido.
+      // listan TODOS los materiales del inventario para que el administrador
+      // elija uno explícitamente: antes se tomaba "la primera de tipo
+      // Tablero", es decir, un costo que nadie había decidido.
       if (!facturaEncontrada && materialesAsociados.length === 0) {
         try {
           const materiales = await materialesService.listar();
-          setLaminasDisponibles(
-            (Array.isArray(materiales) ? materiales : []).filter(
-              (m) => String(m.tipo_material || "").toLowerCase() === "tablero"
-            )
-          );
+          // Sin filtros por tipo: el taller decide qué material asocia
+          // (lámina, herraje, ferretería…) y la cantidad de melanina la
+          // calcula el backend con la misma lógica de siempre.
+          setLaminasDisponibles(Array.isArray(materiales) ? materiales : []);
         } catch {
           setLaminasDisponibles([]);
         }
@@ -599,7 +598,7 @@ export default function AdminDesignDetailPage() {
                 {laminasDisponibles.length === 0 ? (
                   <Alert
                     tipo="warning"
-                    mensaje="No hay láminas de tipo Tablero en el inventario. Registra una en Materiales para poder calcular el costo."
+                    mensaje="No hay materiales en el inventario. Registra uno en Materiales para poder calcular el costo."
                   />
                 ) : (
                   <select
