@@ -495,22 +495,16 @@ export default function FacturasPage() {
                   : "Genera la primera factura desde el formulario de arriba."
               }
               renderAcciones={(factura) => (
-                // Un solo botón por fila: las cinco opciones (detalle, PDF,
-                // editar, pagada y eliminar) viven dentro del menú para no
-                // ensuciar la tabla con botones seguidos.
+                // Un solo botón por fila: las cuatro opciones (detalle, PDF,
+                // editar y eliminar) viven dentro del menú para no ensuciar
+                // la tabla con botones seguidos. "Marcar como pagada" no
+                // está aquí: va en el panel de detalle, tras revisar la
+                // factura y descargar su PDF.
                 <MenuAcciones
                   items={[
                     { etiqueta: "Ver detalle", accion: () => verDetalle(factura) },
                     { etiqueta: "Descargar PDF", accion: () => descargarPdfDe(factura) },
                     { etiqueta: "Editar método de pago", accion: () => abrirEdicion(factura) },
-                    ...(factura.estado_pago === "Pendiente"
-                      ? [
-                          {
-                            etiqueta: "Marcar como pagada",
-                            accion: () => setFacturaAPagar(factura),
-                          },
-                        ]
-                      : []),
                     {
                       etiqueta: "Eliminar factura",
                       peligro: true,
@@ -531,6 +525,7 @@ export default function FacturasPage() {
               cargando={cargandoDetalle}
               descargando={descargando}
               onDescargar={() => descargarPdfDe(detalle)}
+              onMarcarPagada={() => setFacturaAPagar(detalle)}
               tasa={divisa?.usd_por_cop}
             />
           </Card>

@@ -20,7 +20,14 @@ const estiloFilaDato = {
   fontSize: 13,
 };
 
-export default function PanelFactura({ detalle, cargando, descargando, onDescargar, tasa }) {
+export default function PanelFactura({
+  detalle,
+  cargando,
+  descargando,
+  onDescargar,
+  onMarcarPagada,
+  tasa,
+}) {
   // Todavía no se ha elegido ninguna factura.
   if (!detalle && !cargando) {
     return (
@@ -126,6 +133,16 @@ export default function PanelFactura({ detalle, cargando, descargando, onDescarg
         <Button variante="primary" fullWidth disabled={descargando} onClick={onDescargar}>
           {descargando ? "Generando…" : "⬇ Descargar PDF"}
         </Button>
+        {/* Marcar como pagada vive en el detalle (y no en el menú de la
+            fila): lo natural es revisar la factura, descargar el PDF y
+            entonces registrar el pago. Solo aparece si sigue pendiente. */}
+        {detalle.estado_pago === "Pendiente" && onMarcarPagada && (
+          <div style={{ marginTop: 8 }}>
+            <Button variante="success" fullWidth onClick={onMarcarPagada}>
+              ✓ Marcar como pagada
+            </Button>
+          </div>
+        )}
       </div>
     </>
   );
