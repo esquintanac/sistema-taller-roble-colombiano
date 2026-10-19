@@ -29,7 +29,8 @@ class FacturaService:
         Alimenta el selector de la pantalla de facturas. Se expone aparte del
         historial porque el historial tiene un registro por accion (creacion y
         revisiones), no uno por modelo, y ademas no indica si el modelo quedo
-        con materiales.
+        con materiales. Ademas solo devuelve los modelos que AUN no tienen
+        factura: cada modelo se factura una sola vez.
         """
         return cls.dao.consultar_modelos_facturables()
 
@@ -73,6 +74,12 @@ class FacturaService:
         modelo = cls.modelo_dao.consultar_modelo_por_id(id_modelo)
         if modelo is None:
             return {"error": "modelo_no_encontrado"}
+
+        # Regla de negocio: cada modelo admite UNA sola factura. Antes de
+        # calcular nada se verifica que no exista ya una; si existe, el
+        # administrador debe eliminarla (o corregirla) en vez de duplicarla.
+        if cls.dao.existe_factura_para_modelo(id_modelo):
+            return {"error": "modelo_ya_facturado"}
 
         materiales = cls.modelo_material_dao.consultar_materiales_de_modelo(id_modelo)
         if not materiales:

@@ -12,6 +12,12 @@
 // indicar si tenía materiales. Ese endpoint devuelve un modelo por fila y ya
 // filtrado por los que se pueden facturar, que es justo lo que generar_factura
 // exige.
+//
+// Además, cada modelo admite UNA sola factura: el endpoint excluye los que
+// ya tienen factura y el backend responde 400 con codigo "modelo_ya_facturado"
+// si llega un duplicado. Por eso, tras generar o eliminar una factura, se
+// recarga el selector con cargarDisenos() para que siempre muestre solo los
+// pendientes por facturar.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import facturasService from "../services/facturasService";
@@ -209,6 +215,9 @@ export default function FacturasPage() {
       });
       setIdModelo("");
       await cargarFacturas();
+      // El modelo ya quedó facturado: se refresca el selector para que salga
+      // de la lista y no se pueda volver a elegir (una sola factura por modelo).
+      await cargarDisenos();
       setDetalle(creada);
       // El panel muestra la factura recién creada: se lleva la vista hasta
       // él para ver el resultado sin tener que buscarlo.
@@ -218,6 +227,12 @@ export default function FacturasPage() {
       // que el modelo todavía no tenga materiales asociados.
       const texto = error?.response?.data?.mensaje || mensajeDeError(error, "la factura");
       setMensaje({ tipo: "error", titulo: "No se pudo generar la factura", texto });
+      // Si el motivo fue "el modelo ya tiene factura" (dos pestañas abiertas
+      // o selector desactualizado), el listado se recarga para que el modelo
+      // deje de estar disponible en el desplegable.
+      if (error?.response?.data?.codigo === "modelo_ya_facturado") {
+        await cargarDisenos();
+      }
     } finally {
       setGenerando(false);
     }
@@ -304,6 +319,9 @@ export default function FacturasPage() {
         setDetalle(null);
       }
       await cargarFacturas();
+      // Al borrar la factura, el modelo vuelve a estar disponible en el
+      // selector para poder facturarlo de nuevo.
+      await cargarDisenos();
     } catch (error) {
       setMensaje({
         tipo: "error",
@@ -397,8 +415,9 @@ export default function FacturasPage() {
           <Card className="mb-md">
             <h3>Generar factura</h3>
             <p style={{ color: "var(--tx-muted)", fontSize: 13, marginBottom: 14 }}>
-              Solo se pueden facturar diseños que ya tengan materiales asociados; si no los
-              tienen, el backend lo avisa y no genera nada.
+              Solo se pueden facturar diseños que tengan materiales asociados y que aún no tengan
+              factura: cada modelo se factura una sola vez. Si algo falla, el backend lo avisa y no
+              genera nada.
             </p>
 
             <div className="grid-2">
@@ -422,7 +441,9 @@ export default function FacturasPage() {
                 }))}
                 hint={
                   disenos.length === 0
-                    ? "Ningún diseño tiene materiales asociados todavía. Asócialos desde el detalle del diseño para poder facturarlo."
+                    ? facturas.length > 0
+                      ? "No quedan diseños pendientes por facturar: todos los que tienen materiales ya tienen factura. Si necesitas regenerar una, elimina primero su factura existente."
+                      : "Ningún diseño tiene materiales asociados todavía. Asócialos desde el detalle del diseño para poder facturarlo."
                     : undefined
                 }
               />

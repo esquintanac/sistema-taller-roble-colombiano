@@ -64,9 +64,9 @@ const PASOS_ADMIN = [
     titulo: "Facturas",
     pantalla: "Panel → Facturas",
     descripcion:
-      "Genera la factura de un diseño que ya tenga materiales asociados: elige el diseño y el método de pago, revisa el desglose y el total —en pesos y en dólares— y guarda. Desde la tabla consultas cada factura, su estado de pago, descargas su PDF, corriges el método de pago si cambió, marcas la factura como pagada o la eliminas.",
+      "Genera la factura de un diseño que ya tenga materiales asociados: elige el diseño y el método de pago, revisa el desglose y el total —en pesos y en dólares— y guarda. Cada diseño se factura una sola vez: al generar su factura deja de aparecer en el selector. Desde la tabla consultas cada factura, su estado de pago, descargas su PDF, corriges el método de pago si cambió, marcas la factura como pagada o la eliminas.",
     consejo:
-      "Si un diseño no aparece en el selector es porque todavía no tiene materiales: asocialos desde su detalle (paso «Detalle, visor 3D y costo») y vuelve a intentarlo.",
+      "Si un diseño no aparece en el selector es porque todavía no tiene materiales —asócialos desde su detalle (paso «Detalle, visor 3D y costo»)— o porque ya tiene factura: en ese caso elimina la factura existente si necesitas regenerarla.",
   },
   {
     icono: "🔐",

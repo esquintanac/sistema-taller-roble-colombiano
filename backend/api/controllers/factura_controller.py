@@ -16,6 +16,7 @@ from api.services.pdf_service import PDFService
 MENSAJES_ERROR = {
     "modelo_no_encontrado": "El modelo indicado no existe.",
     "sin_materiales": "El modelo no tiene materiales asociados. Asocia al menos uno antes de generar la factura.",
+    "modelo_ya_facturado": "Este modelo ya tiene una factura generada. Cada modelo solo puede facturarse una vez; si necesitas regenerarla, elimina la factura existente primero.",
     "error_al_crear": "Ocurrio un error al generar la factura.",
     "factura_no_encontrada": "La factura indicada no existe.",
     "metodo_vacio": "metodo_pago es obligatorio.",
@@ -52,7 +53,10 @@ def facturas_lista(request):
     if "error" in resultado:
         codigo = status.HTTP_404_NOT_FOUND if resultado["error"] == "modelo_no_encontrado" else status.HTTP_400_BAD_REQUEST
         return Response(
-            {"exito": False, "mensaje": MENSAJES_ERROR[resultado["error"]]},
+            # "codigo" permite al frontend reaccionar al motivo concreto
+            # (p. ej. recargar el selector si el modelo ya estaba facturado)
+            # sin depender del texto del mensaje.
+            {"exito": False, "codigo": resultado["error"], "mensaje": MENSAJES_ERROR[resultado["error"]]},
             status=codigo,
         )
 

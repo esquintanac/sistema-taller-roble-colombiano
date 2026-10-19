@@ -156,6 +156,10 @@ class FacturaDAO:
             aparece, que es justo la condicion que exige generar_factura. Asi el
             administrador no elige a ciegas y nunca recibe el 400 "sin
             materiales".
+          - LEFT JOIN factura + WHERE f.id_modelo IS NULL: un modelo que YA
+            tiene factura desaparece de la lista, porque cada modelo se
+            factura UNA sola vez (regla que exige generar_factura y respalda
+            existe_factura_para_modelo).
           - GROUP BY: un modelo con N materiales produce UNA sola fila.
           - Cliente con INNER JOIN porque la tabla factura exige id_cliente
             (NOT NULL): un modelo sin cliente tampoco se podria facturar.
@@ -174,6 +178,8 @@ class FacturaDAO:
             FROM modelo m
             INNER JOIN modelo_material mm ON mm.id_modelo = m.id_modelo
             INNER JOIN cliente c ON c.id_cliente = m.id_cliente
+            LEFT JOIN factura f ON f.id_modelo = m.id_modelo
+            WHERE f.id_modelo IS NULL
             GROUP BY m.id_modelo, m.Nombre_modelo, c.Nombre, c.Apellido
             ORDER BY m.id_modelo DESC
             """)
@@ -189,6 +195,27 @@ class FacturaDAO:
         except Error as error:
             print(f"Error al consultar los modelos facturables: {error}")
             return modelos
+        finally:
+            cursor.close()
+            Conexion.cerrar_conexion(conexion)
+
+    def existe_factura_para_modelo(self, id_modelo: int) -> bool:
+        """True si el modelo ya tiene al menos una factura emitida.
+
+        Respalda la regla "cada modelo se factura una sola vez" dentro del
+        servicio, aunque alguna peticion llegue directo a la API sin pasar
+        por el selector del frontend.
+        """
+        conexion = Conexion.obtener_conexion()
+        if conexion is None:
+            return False
+        try:
+            cursor = conexion.cursor()
+            cursor.execute("SELECT 1 FROM factura WHERE id_modelo = %s LIMIT 1", (id_modelo,))
+            return cursor.fetchone() is not None
+        except Error as error:
+            print(f"Error al verificar facturas del modelo {id_modelo}: {error}")
+            return False
         finally:
             cursor.close()
             Conexion.cerrar_conexion(conexion)
