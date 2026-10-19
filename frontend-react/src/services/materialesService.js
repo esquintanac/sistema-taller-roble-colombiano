@@ -9,6 +9,7 @@
 // final de este archivo.
 
 import api from "./api";
+import { formatearMiles, soloDigitos } from "../utils/numeros";
 
 // Opciones cerradas para el formulario de materiales. El tipo y la unidad
 // no son texto libre porque el sistema los usa como reglas: el tipo sirve
@@ -69,22 +70,29 @@ const DIGITOS_ENTEROS = {
 };
 
 /**
- * Filtra lo que se escribe en un campo numérico.
+ * Filtra lo que se escribe en un campo numérico y lo devuelve CON formato
+ * de miles, para que el administrador vea de inmediato si está escribiendo
+ * miles o millones ("9.999.999" en vez de "9999999").
  *
  * @param {string} nombreCampo name del input; los que no son numéricos
  *                             (nombre, selects) pasan tal cual.
- * @param {string} valor       valor crudo del evento onChange.
- * @returns {string|null}      valor a guardar recortado a los dígitos del
- *                             tope; null si no es un entero válido
- *                             ("1500.5", "-", "1e5", letras), lo que hace
- *                             que el campo conserve el valor anterior.
+ * @param {string} valor       valor crudo del evento onChange (puede traer
+ *                             los puntos ya formateados).
+ * @returns {string|null}      texto formateado recortado a los dígitos del
+ *                             tope; "" si el campo quedó vacío; null si la
+ *                             entrada no tiene NI UN dígito (letras o
+ *                             símbolos puros), lo que hace que el campo
+ *                             conserve el valor anterior.
  */
 export function limitarNumero(nombreCampo, valor) {
   const digitos = DIGITOS_ENTEROS[nombreCampo];
   if (digitos === undefined) return valor;
   if (valor === "") return "";
-  if (!/^\d+$/.test(valor)) return null;
-  return valor.length > digitos ? valor.slice(0, digitos) : valor;
+  const limpios = soloDigitos(valor);
+  if (!limpios) return null;
+  // Recorta a la cantidad de dígitos del tope (los topes son todos 9, así
+  // que eso garantiza no superarlo) y agrupa de 3 en 3 con punto.
+  return formatearMiles(limpios.slice(0, digitos));
 }
 
 const materialesService = {

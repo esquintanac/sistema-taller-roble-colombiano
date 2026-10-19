@@ -10,6 +10,10 @@ import materialesService, {
     LIMITES_MATERIAL,
     limitarNumero,
 } from "../../services/materialesService";
+// Formato de miles mientras se escribe: los tres campos numéricos del
+// formulario guardan el texto ya visible ("9.999.999") y se limpian a
+// solo dígitos al validar y al enviar al backend.
+import { formatearMiles, soloDigitos } from "../../utils/numeros";
 import DataTable from "../ui/DataTable";
 import FormField from "../ui/FormField";
 import Button from "../ui/Button";
@@ -79,16 +83,39 @@ export default function MaterialesCrud() {
     }
 
     function handleChange(e) {
-        // Los campos numéricos son texto con teclado numérico: maxLength
-        // corta al número de dígitos del tope (igual que en el nombre) y
-        // limitarNumero descarta todo lo que no sean dígitos enteros
-        // (punto decimal, signos, letras); si la tecla no pasa, el campo
-        // conserva el valor anterior.
-        const valor = limitarNumero(e.target.name, e.target.value) ?? formulario[e.target.name];
-        setFormulario({ ...formulario, [e.target.name]: valor });
+        // Los campos numéricos se muestran con formato de miles/millones
+        // mientras se escribe ("9.999.999"): limitarNumero se queda solo con
+        // los dígitos, aplica el tope del campo y devuelve el texto ya
+        // formateado; si la entrada no tiene ni un dígito, devuelve null y el
+        // campo conserva su valor anterior.
+        const { name, value, selectionStart } = e.target;
+        const valor = limitarNumero(name, value) ?? formulario[name];
+        setFormulario({ ...formulario, [name]: valor });
+        // Al insertarse o borrarse los puntos de miles, el cursor se
+        // recoloca contando DÍGITOS hacia atrás (los puntos se ignoran),
+        // para que siga justo donde el usuario estaba escribiendo.
+        if (valor !== value && selectionStart != null) {
+            const digitosAntes = (value.slice(0, selectionStart).match(/\d/g) || []).length;
+            let posicion = 0;
+            if (digitosAntes > 0) {
+                posicion = valor.length;
+                let vistos = 0;
+                for (let i = 0; i < valor.length; i++) {
+                    if (/\d/.test(valor[i])) {
+                        vistos += 1;
+                        if (vistos === digitosAntes) {
+                            posicion = i + 1;
+                            break;
+                        }
+                    }
+                }
+            }
+            const input = e.target;
+            requestAnimationFrame(() => input.setSelectionRange?.(posicion, posicion));
+        }
         // El error de un campo desaparece en cuanto se corrige.
-        if (errores[e.target.name]) {
-            setErrores({ ...errores, [e.target.name]: undefined });
+        if (errores[name]) {
+            setErrores({ ...errores, [name]: undefined });
         }
     }
 
@@ -108,7 +135,9 @@ export default function MaterialesCrud() {
             nuevos.nombre_material = `Máximo ${LIMITES_MATERIAL.nombre} caracteres`;
         }
 
-        const costo = Number(formulario.costo_unitario);
+        // Los tres campos guardan el texto con formato de miles ("1.234.567");
+        // para comparar contra los topes se reducen a solo dígitos.
+        const costo = Number(soloDigitos(formulario.costo_unitario));
         if (formulario.costo_unitario !== "" && (!Number.isFinite(costo) || costo <= 0)) {
             nuevos.costo_unitario = "El costo debe ser un número mayor a 0";
         } else if (costo > LIMITES_MATERIAL.costoMaximo) {
@@ -117,7 +146,7 @@ export default function MaterialesCrud() {
             nuevos.costo_unitario = "El costo no admite decimales";
         }
 
-        const stock = Number(formulario.stock);
+        const stock = Number(soloDigitos(formulario.stock));
         if (formulario.stock !== "" && (!Number.isFinite(stock) || stock < 0)) {
             nuevos.stock = "El stock no puede ser negativo";
         } else if (stock > LIMITES_MATERIAL.stockMaximo) {
@@ -126,7 +155,7 @@ export default function MaterialesCrud() {
             nuevos.stock = "El stock no admite decimales";
         }
 
-        const minimo = Number(formulario.stock_minimo);
+        const minimo = Number(soloDigitos(formulario.stock_minimo));
         if (formulario.stock_minimo !== "" && (!Number.isFinite(minimo) || minimo < 0)) {
             nuevos.stock_minimo = "El stock mínimo no puede ser negativo";
         } else if (minimo > LIMITES_MATERIAL.stockMinimoMaximo) {
@@ -154,11 +183,20 @@ export default function MaterialesCrud() {
             return;
         }
         try {
+            // El formulario conserva los números con formato de miles para
+            // que el administrador los lea bien; el backend recibe solo
+            // dígitos ("9.999.999" -> "9999999"), como siempre.
+            const paraEnviar = {
+                ...formulario,
+                costo_unitario: soloDigitos(formulario.costo_unitario),
+                stock: soloDigitos(formulario.stock),
+                stock_minimo: soloDigitos(formulario.stock_minimo),
+            };
             if (idEditando) {
-                await materialesService.actualizar(idEditando, formulario);
+                await materialesService.actualizar(idEditando, paraEnviar);
                 setMensaje({ tipo: "success", texto: "Material actualizado correctamente." });
             } else {
-                await materialesService.crear(formulario);
+                await materialesService.crear(paraEnviar);
                 setMensaje({ tipo: "success", texto: "Material registrado correctamente." });
             }
             setFormulario(MATERIAL_VACIO);
@@ -180,9 +218,10 @@ export default function MaterialesCrud() {
 
     function iniciarEdicion(material) {
         // Los precios y stocks son enteros: si un registro heredado trae
-        // decimales (o NULL en stock_minimo), al cargarlo se redondea para
-        // que el formulario muestre exactamente lo que se podrá guardar.
-        const entero = (v) => String(Math.round(Number(v ?? 0)));
+        // decimales (o NULL en stock_minimo), al cargarlo se redondea y se
+        // formatea con miles para que el formulario muestre exactamente lo
+        // que se podrá guardar, con la misma lectura que al escribir.
+        const entero = (v) => formatearMiles(String(Math.round(Number(v ?? 0))));
         setFormulario({
             ...material,
             costo_unitario: entero(material.costo_unitario),
@@ -232,9 +271,9 @@ export default function MaterialesCrud() {
                     <FormField label="Nombre del material" name="nombre_material" value={formulario.nombre_material} onChange={handleChange} error={errores.nombre_material} requerido maxLength={LIMITES_MATERIAL.nombre}/>
                     <FormField label="Tipo del material" name="tipo_material" as="select" value={formulario.tipo_material} onChange={handleChange} error={errores.tipo_material} requerido opciones={opcionesConActual(formulario.tipo_material, TIPOS_MATERIAL)}/>
                     <FormField label="Unidad de medida" name="unidad_medida" as="select" value={formulario.unidad_medida} onChange={handleChange} error={errores.unidad_medida} requerido opciones={opcionesConActual(formulario.unidad_medida, UNIDADES_MEDIDA)}/>
-                    <FormField label="Costo unitario" name="costo_unitario" value={formulario.costo_unitario} tipo="text" inputMode="numeric" maxLength={String(LIMITES_MATERIAL.costoMaximo).length} onChange={handleChange} error={errores.costo_unitario} hint={`Sin decimales · máximo ${LIMITES_MATERIAL.costoMaximo.toLocaleString("es-CO")}`} requerido/>
-                    <FormField label="Stock" name="stock" value={formulario.stock} tipo="text" inputMode="numeric" maxLength={String(LIMITES_MATERIAL.stockMaximo).length} onChange={handleChange} error={errores.stock} hint={`Sin decimales · máximo ${LIMITES_MATERIAL.stockMaximo.toLocaleString("es-CO")}`} requerido/>
-                    <FormField label="Stock minimo" name="stock_minimo" value={formulario.stock_minimo} tipo="text" inputMode="numeric" maxLength={String(LIMITES_MATERIAL.stockMinimoMaximo).length} onChange={handleChange} error={errores.stock_minimo} hint={`Sin decimales · máximo ${LIMITES_MATERIAL.stockMinimoMaximo.toLocaleString("es-CO")}`} requerido/>
+                    <FormField label="Costo unitario" name="costo_unitario" value={formulario.costo_unitario} tipo="text" inputMode="numeric" onChange={handleChange} error={errores.costo_unitario} hint={`Sin decimales · máximo ${LIMITES_MATERIAL.costoMaximo.toLocaleString("es-CO")} · el formato de miles se aplica solo`} requerido/>
+                    <FormField label="Stock" name="stock" value={formulario.stock} tipo="text" inputMode="numeric" onChange={handleChange} error={errores.stock} hint={`Sin decimales · máximo ${LIMITES_MATERIAL.stockMaximo.toLocaleString("es-CO")} · el formato de miles se aplica solo`} requerido/>
+                    <FormField label="Stock minimo" name="stock_minimo" value={formulario.stock_minimo} tipo="text" inputMode="numeric" onChange={handleChange} error={errores.stock_minimo} hint={`Sin decimales · máximo ${LIMITES_MATERIAL.stockMinimoMaximo.toLocaleString("es-CO")} · el formato de miles se aplica solo`} requerido/>
 
                     <Button tipo="submit" variante="primary">
                         {idEditando ? "Guardar cambios" : "Registrar material"}
