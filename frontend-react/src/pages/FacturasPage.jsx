@@ -56,6 +56,10 @@ const COLUMNAS = [
   { key: "metodo_pago", label: "Método" },
 ];
 
+// Filtros por estado de pago, con el mismo patrón (y valores) que usa el
+// historial de diseños: "Todos" deja la lista completa sin tocar.
+const FILTROS = ["Todos", "Pendiente", "Pagada"];
+
 const estiloBuscador = {
   height: 44,
   padding: "0 14px",
@@ -73,6 +77,7 @@ export default function FacturasPage() {
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
   const [mensaje, setMensaje] = useState(null);
   const [busqueda, setBusqueda] = useState("");
+  const [filtro, setFiltro] = useState("Todos");
   const [descargando, setDescargando] = useState(false);
 
   // Generación de una factura nueva.
@@ -332,17 +337,23 @@ export default function FacturasPage() {
     }
   }
 
+  // Búsqueda por texto y filtro por estado de pago, ambos resueltos en el
+  // cliente: el backend devuelve todas las facturas de una vez (sin
+  // paginación), igual que en el historial de diseños.
   const filtradas = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
-    if (!texto) return facturas;
-    return facturas.filter((f) =>
+    const porEstado =
+      filtro === "Todos" ? facturas : facturas.filter((f) => f.estado_pago === filtro);
+    if (!texto) return porEstado;
+    return porEstado.filter((f) =>
       [f.id_factura, f.cliente, f.nombre_modelo, f.estado_pago, f.metodo_pago].some((valor) =>
         String(valor || "").toLowerCase().includes(texto)
       )
     );
-  }, [facturas, busqueda]);
+  }, [facturas, busqueda, filtro]);
 
   const pendientes = facturas.filter((f) => f.estado_pago === "Pendiente").length;
+  const pagadas = facturas.length - pendientes;
   const totalFacturado = facturas.reduce((suma, f) => suma + Number(f.valor_total || 0), 0);
 
   return (
@@ -444,8 +455,22 @@ export default function FacturasPage() {
                 aria-label="Buscar facturas"
                 style={estiloBuscador}
               />
+              {/* Filtro por estado con el mismo patrón de botones que el
+                  historial de diseños: el activo va en primary. */}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {FILTROS.map((opcion) => (
+                  <Button
+                    key={opcion}
+                    tamano="sm"
+                    variante={filtro === opcion ? "primary" : "secondary"}
+                    onClick={() => setFiltro(opcion)}
+                  >
+                    {opcion}
+                  </Button>
+                ))}
+              </div>
               <span style={{ fontSize: 12, color: "var(--tx-muted)" }}>
-                {facturas.length} factura(s) en total
+                {facturas.length} factura(s) en total · {pendientes} pendiente(s) · {pagadas} pagada(s)
                 {filtradas.length !== facturas.length && ` · mostrando ${filtradas.length}`}
               </span>
             </div>
@@ -459,10 +484,14 @@ export default function FacturasPage() {
             <DataTable
               columnas={COLUMNAS}
               datos={filtradas}
-              tituloVacio={busqueda ? "Ninguna factura coincide" : "Aún no hay facturas"}
+              tituloVacio={
+                busqueda || filtro !== "Todos"
+                  ? "Ninguna factura coincide"
+                  : "Aún no hay facturas"
+              }
               mensajeVacio={
-                busqueda
-                  ? "Prueba con otro cliente, modelo o método de pago."
+                busqueda || filtro !== "Todos"
+                  ? "Prueba con otra búsqueda o cambia el filtro de estado."
                   : "Genera la primera factura desde el formulario de arriba."
               }
               renderAcciones={(factura) => (
