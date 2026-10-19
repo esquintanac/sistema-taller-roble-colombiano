@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Stepper from "../components/ui/Stepper";
 import Button from "../components/ui/Button";
 import Alert from "../components/ui/Alert";
+import Modal from "../components/ui/Modal";
 import Viewer3D from "../components/diseno3d/Viewer3D";
 import modelosService from "../services/modelosService";
 import { mensajeDeError } from "../utils/descargas";
@@ -15,12 +16,15 @@ export default function Design3DPage() {
   const [diseno, setDiseno] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
+  // Estado vacío (entrada directa por URL, sin modelo creado): es una
+  // tarjeta con su botón, no una ventana emergente.
+  const [sinModelo, setSinModelo] = useState(false);
 
   useEffect(() => {
     const modeloCreado = JSON.parse(sessionStorage.getItem("trc_modelo_creado") || "null");
 
     if (!modeloCreado?.id_modelo) {
-      setError("No hay un modelo generado todavía. Vuelve al formulario para crear uno.");
+      setSinModelo(true);
       setCargando(false);
       return;
     }
@@ -49,15 +53,36 @@ export default function Design3DPage() {
     );
   }
 
-  if (error) {
+  if (sinModelo) {
     return (
       <div className="container" style={{ paddingTop: 30 }}>
         <div className="card">
-          <Alert tipo="error" titulo="No se pudo mostrar el diseño" mensaje={error} />
+          <Alert
+            tipo="warning"
+            titulo="No hay un modelo generado"
+            mensaje="No hay un modelo generado todavía. Vuelve al formulario para crear uno."
+          />
           <Button variante="primary" onClick={() => navigate("/formulario-datos")}>
             Ir al formulario
           </Button>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    // Falló el cálculo del diseño y el fondo queda vacío: el modal solo
+    // se cierra con su botón (bloquearCierre), que lleva al formulario.
+    return (
+      <div className="container" style={{ paddingTop: 30 }}>
+        <Modal
+          tipo="error"
+          bloquearCierre
+          titulo="No se pudo mostrar el diseño"
+          mensaje={error}
+          textoAceptar="Ir al formulario"
+          onAceptar={() => navigate("/formulario-datos")}
+        />
       </div>
     );
   }

@@ -3,14 +3,16 @@
 // solo uso (/restablecer/:token). Al montar se valida contra el backend y,
 // solo si sigue vigente, se muestra el formulario de la contraseña nueva.
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import authService from "../services/authService";
 import FormField from "../components/ui/FormField";
 import Button from "../components/ui/Button";
 import Alert from "../components/ui/Alert";
+import Modal from "../components/ui/Modal";
 
 export default function RestablecerContrasenaPage() {
   const { token } = useParams();
+  const navigate = useNavigate();
 
   // Estado del enlace: "validando" -> "valido" | "invalido".
   const [estadoEnlace, setEstadoEnlace] = useState("validando");
@@ -100,28 +102,31 @@ export default function RestablecerContrasenaPage() {
         )}
 
         {estadoEnlace === "invalido" && (
-          <>
-            <Alert tipo="error" titulo="Enlace no disponible" mensaje={mensajeEnlace} />
-            <Link className="btn btn-primary btn-full" to="/recuperar-contrasena">
-              Solicitar un enlace nuevo
-            </Link>
-            <Link className="btn btn-secondary btn-full" to="/login">
-              Volver a iniciar sesión
-            </Link>
-          </>
+          // La tarjeta queda vacía tras el fallo del enlace: el modal
+          // bloquea el cierre para que solo se salga con una de las dos
+          // acciones (pedir enlace nuevo o volver al login).
+          <Modal
+            tipo="error"
+            bloquearCierre
+            titulo="Enlace no disponible"
+            mensaje={mensajeEnlace}
+            textoAceptar="Solicitar un enlace nuevo"
+            textoCancelar="Volver a iniciar sesión"
+            onAceptar={() => navigate("/recuperar-contrasena")}
+            onCancelar={() => navigate("/login")}
+          />
         )}
 
         {estadoEnlace === "valido" && guardado && (
-          <>
-            <Alert
-              tipo="success"
-              titulo="Contraseña actualizada"
-              mensaje="Tu contraseña fue actualizada correctamente. Ya puedes iniciar sesión con la nueva."
-            />
-            <Link className="btn btn-primary btn-full" to="/login">
-              Iniciar sesión
-            </Link>
-          </>
+          // Cerrar el modal (Escape o clic fuera) también lleva al login:
+          // no queda nada más que hacer en esta pantalla.
+          <Modal
+            tipo="success"
+            titulo="Contraseña actualizada"
+            mensaje="Tu contraseña fue actualizada correctamente. Ya puedes iniciar sesión con la nueva."
+            textoAceptar="Iniciar sesión"
+            onAceptar={() => navigate("/login")}
+          />
         )}
 
         {estadoEnlace === "valido" && !guardado && (

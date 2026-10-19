@@ -3,9 +3,10 @@
 // del formulario y valida los campos obligatorios antes de avanzar
 // de sub-paso (RF2).
 
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Stepper from "../ui/Stepper";
+import Modal from "../ui/Modal";
 import DimensionsStep from "./DimensionsStep";
 import DistributionStep from "./DistributionStep";
 import FinishesStep from "./FinishesStep";
@@ -60,29 +61,34 @@ export default function ModelWizard() {
   const [clientes, setClientes] = useState([]);
   const [cargandoClientes, setCargandoClientes] = useState(true);
   const [errorClientes, setErrorClientes] = useState("");
+  // Visibilidad del modal de error de carga: el mensaje se conserva aunque
+  // se cierre la ventana, para que el hint del select siga avisando.
+  const [modalClientes, setModalClientes] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    let activo = true;
-    async function cargarClientes() {
-      try {
-        const datosClientes = await clientesService.listar();
-        if (activo) setClientes(Array.isArray(datosClientes) ? datosClientes : []);
-      } catch {
-        if (activo) {
-          setErrorClientes(
-            "No se pudieron cargar los clientes. Verifica que el servidor esté disponible."
-          );
-        }
-      } finally {
-        if (activo) setCargandoClientes(false);
-      }
+  // Se extrae en useCallback para reutilizarlo tanto al montar como desde
+  // el botón "Reintentar" del modal. (En React 18/19 un setState tras
+  // desmontar es inocuo, así que ya no hace falta el guard "activo".)
+  const cargarClientes = useCallback(async () => {
+    setCargandoClientes(true);
+    setErrorClientes("");
+    setModalClientes(false);
+    try {
+      const datosClientes = await clientesService.listar();
+      setClientes(Array.isArray(datosClientes) ? datosClientes : []);
+    } catch {
+      setErrorClientes(
+        "No se pudieron cargar los clientes. Verifica que el servidor esté disponible."
+      );
+      setModalClientes(true);
+    } finally {
+      setCargandoClientes(false);
     }
-    cargarClientes();
-    return () => {
-      activo = false;
-    };
   }, []);
+
+  useEffect(() => {
+    cargarClientes();
+  }, [cargarClientes]);
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -214,6 +220,21 @@ export default function ModelWizard() {
           />
         )}
       </div>
+
+      {/* Falló la carga del catálogo de clientes: ventana emergente con
+          reintentar/cerrar. El formulario de abajo sigue usable si se
+          cierra (el hint del select avisa que la carga falló). */}
+      {modalClientes && (
+        <Modal
+          tipo="error"
+          titulo="No se pudieron cargar los clientes"
+          mensaje={errorClientes}
+          textoAceptar="Reintentar"
+          textoCancelar="Cerrar"
+          onAceptar={cargarClientes}
+          onCancelar={() => setModalClientes(false)}
+        />
+      )}
     </div>
   );
 }

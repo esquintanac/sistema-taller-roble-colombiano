@@ -186,7 +186,9 @@ export default function VerificationCodeForm({
         }
       />
 
-      {error && <Alert tipo="error" mensaje={error} />}
+      {/* El error de código queda SOLO bajo el campo (marcado en rojo):
+          aquí se quitó el Alert duplicado, que tapaba el formulario sin
+          aportar información nueva. El aviso de reenvío sí sigue en línea. */}
       {aviso && !error && <Alert tipo="success" mensaje={aviso} />}
 
       <div className="form-group">

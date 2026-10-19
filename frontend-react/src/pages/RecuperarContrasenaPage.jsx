@@ -9,6 +9,7 @@ import authService from "../services/authService";
 import FormField from "../components/ui/FormField";
 import Button from "../components/ui/Button";
 import Alert from "../components/ui/Alert";
+import Modal from "../components/ui/Modal";
 
 const PATRON_CORREO = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -18,6 +19,9 @@ export default function RecuperarContrasenaPage() {
   const [errorGlobal, setErrorGlobal] = useState("");
   const [cargando, setCargando] = useState(false);
   const [enviado, setEnviado] = useState(false);
+  // El resultado del envío se anuncia con ventana emergente; se limpia al
+  // aceptar para no volver a mostrarse.
+  const [avisoExito, setAvisoExito] = useState(false);
   const [enlaceDemo, setEnlaceDemo] = useState("");
 
   async function handleSubmit(e) {
@@ -40,6 +44,7 @@ export default function RecuperarContrasenaPage() {
       const data = await authService.solicitarRecuperacion(correoLimpio);
       setEnlaceDemo(data.enlace_demo || "");
       setEnviado(true);
+      setAvisoExito(true);
     } catch (error) {
       setErrorGlobal(
         error?.response?.data?.mensaje ||
@@ -60,12 +65,6 @@ export default function RecuperarContrasenaPage() {
       <div className="card">
         {enviado ? (
           <>
-            <Alert
-              tipo="success"
-              titulo="Solicitud recibida"
-              mensaje="Si existe una cuenta asociada a ese correo, recibirás un mensaje con el enlace para restablecer tu contraseña. El enlace vence en 30 minutos y solo sirve una vez."
-            />
-
             {enlaceDemo && (
               <>
                 <Alert
@@ -113,6 +112,17 @@ export default function RecuperarContrasenaPage() {
           </form>
         )}
       </div>
+
+      {/* El resultado del envío se anuncia con ventana emergente; la
+          vista de arriba conserva los enlaces para continuar. */}
+      {avisoExito && (
+        <Modal
+          tipo="success"
+          titulo="Solicitud recibida"
+          mensaje="Si existe una cuenta asociada a ese correo, recibirás un mensaje con el enlace para restablecer tu contraseña. El enlace vence en 30 minutos y solo sirve una vez."
+          onAceptar={() => setAvisoExito(false)}
+        />
+      )}
     </div>
   );
 }

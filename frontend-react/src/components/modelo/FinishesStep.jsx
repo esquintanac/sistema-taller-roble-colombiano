@@ -8,7 +8,6 @@
 import FormField from "../ui/FormField";
 import ToggleSwitch from "../ui/ToggleSwitch";
 import Button from "../ui/Button";
-import Alert from "../ui/Alert";
 import { etiquetaCliente } from "../../services/clientesService";
 
 // Acabado de la melanina (opcional). Mismos valores que el formulario de
@@ -109,7 +108,6 @@ export default function FinishesStep({
         />
       )}
 
-      {errorClientes && <Alert tipo="error" mensaje={errorClientes} />}
       <FormField
         label="Cliente"
         name="idCliente"
@@ -121,9 +119,13 @@ export default function FinishesStep({
         hint={
           cargandoClientes
             ? "Cargando clientes…"
-            : clientes.length === 0
-              ? "No hay clientes registrados. Un administrador debe crearlos primero."
-              : undefined
+            : errorClientes
+              // Si falló la carga, el hint lo dice en lugar de mostrar el
+              // mensaje engañoso de "no hay clientes registrados".
+              ? errorClientes
+              : clientes.length === 0
+                ? "No hay clientes registrados. Un administrador debe crearlos primero."
+                : undefined
         }
         opciones={opcionesClientes}
       />

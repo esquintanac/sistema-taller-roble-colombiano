@@ -9,10 +9,14 @@
 // Reutiliza las mismas clases del aviso de sesion (modal-overlay /
 // modal-aviso) para que todos los modales del sistema se vean iguales.
 //
-// El foco va al boton principal al abrirse; Escape cierra los avisos y
-// cancela las confirmaciones (nunca confirma); el modal de confirmacion
-// no se cierra al pulsar fuera: eliminar tiene que ser una decision
-// explicita.
+// El foco va al boton principal al abrirse y se devuelve al elemento que
+// abrio la ventana al cerrarse; Escape cierra los avisos y cancela las
+// confirmaciones (nunca confirma); el modal de confirmacion no se cierra
+// al pulsar fuera: eliminar tiene que ser una decision explicita.
+//
+// Con bloquearCierre tampoco cierran Escape ni el clic fuera: sirve para
+// los errores de pantalla completa, donde el fondo queda vacio y solo se
+// debe salir con los botones (Aceptar / Cancelar).
 
 import { useEffect, useRef } from "react";
 import Button from "./Button";
@@ -32,8 +36,10 @@ export default function Modal({
   mensaje,
   children,
   textoAceptar = "Aceptar",
+  textoCancelar = "Cancelar",
   textoConfirmar = "Eliminar",
   deshabilitado = false,
+  bloquearCierre = false,
   onAceptar,
   onConfirmar,
   onCancelar,
@@ -41,36 +47,50 @@ export default function Modal({
   const botonPrincipal = useRef(null);
   const esConfirmacion = tipo === "confirm";
   // Escape y el clic en el fondo cierran el aviso o cancelan la acción;
-  // nunca ejecutan la acción principal por su cuenta.
+  // nunca ejecutan la acción principal por su cuenta. Con bloquearCierre
+  // tampoco cierran: en un error de pantalla completa el fondo está vacío
+  // y solo se debe salir con los botones.
+  const cierraConFondo = !esConfirmacion && !bloquearCierre;
   const cerrar = onCancelar ?? onAceptar;
 
   // Al abrirse, el foco va al boton principal: con teclado se responde de
   // inmediato sin tabular por la ventana (mismo criterio que AvisoSesion).
+  // Al cerrarse se devuelve al elemento que abrió la ventana, para que el
+  // teclado no pierda su sitio (recomendación ARIA para diálogos).
   useEffect(() => {
+    const elementoPrevio = document.activeElement;
     botonPrincipal.current?.focus();
+    return () => {
+      if (elementoPrevio && typeof elementoPrevio.focus === "function") {
+        elementoPrevio.focus();
+      }
+    };
   }, []);
 
   useEffect(() => {
     function manejarEscape(evento) {
       if (evento.key !== "Escape") return;
+      if (bloquearCierre) return;
       if (esConfirmacion) onCancelar?.();
       else cerrar?.();
     }
     window.addEventListener("keydown", manejarEscape);
     return () => window.removeEventListener("keydown", manejarEscape);
-  }, [esConfirmacion, onCancelar, cerrar]);
+  }, [bloquearCierre, esConfirmacion, onCancelar, cerrar]);
 
   return (
     // En los avisos (exito/error) y en los formularios (info) pulsar fuera
-    // cierra o cancela; en las confirmaciones el fondo no hace nada: la
-    // decisión solo se toma con los botones.
+    // cierra o cancela; en las confirmaciones y con bloquearCierre el fondo
+    // no hace nada: la decisión solo se toma con los botones.
     <div
       className="modal-overlay"
-      onClick={esConfirmacion ? undefined : cerrar}
+      onClick={cierraConFondo ? cerrar : undefined}
     >
       <div
         className="modal-aviso"
-        role={esConfirmacion ? "alertdialog" : "dialog"}
+        // alertdialog para lo que exige respuesta (avisos de resultado y
+        // confirmaciones); dialog para los formularios embebidos (info).
+        role={tipo === "info" ? "dialog" : "alertdialog"}
         aria-modal="true"
         aria-label={titulo || TITULOS[tipo]}
         // El clic dentro de la caja no debe burbujear al overlay.
@@ -92,7 +112,7 @@ export default function Modal({
               {/* Cancelar va primero y recibe el foco: si se pulsa Enter
                   sin querer se cancela, nunca se borra. */}
               <Button ref={botonPrincipal} variante="secondary" fullWidth onClick={onCancelar}>
-                Cancelar
+                {textoCancelar}
               </Button>
               <Button variante="danger" fullWidth onClick={onConfirmar}>
                 {textoConfirmar}
@@ -102,7 +122,7 @@ export default function Modal({
             <>
               {onCancelar && (
                 <Button variante="secondary" fullWidth onClick={onCancelar}>
-                  Cancelar
+                  {textoCancelar}
                 </Button>
               )}
               <Button

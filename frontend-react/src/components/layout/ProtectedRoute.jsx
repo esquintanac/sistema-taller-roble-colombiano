@@ -1,7 +1,8 @@
 // src/components/layout/ProtectedRoute.jsx
 // Envuelve rutas que requieren sesion activa y, opcionalmente, un rol
-// especifico. Redirige el login si no hay sesion, o muestra un aviso
-// de acceso restringido si el rol no coincide (RF8).
+// especifico. Redirige al login si no hay sesion; si el rol no coincide
+// (RF8) redirige al panel de inicio: es una decision de ruta, no el
+// resultado de una accion, asi que no se abre una ventana emergente.
 
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -26,13 +27,10 @@ export default function ProtectedRoute({ children, rolRequerido }) {
     }
 
     if (rolRequerido && usuario.rol !== rolRequerido) {
-        return (
-            <div className="container" style={{ padding: "40px 0" }}>
-                <div className="alert alert-error">
-                    <strong>Acceso Restringido.</strong> No tienes permiso para ver esta pantalla.
-                </div>
-            </div>
-        );
+        // Acceso restringido: no es un resultado de operación sino una
+        // decisión de rol, así que se vuelve al panel de inicio sin
+        // interrumpir con una ventana emergente.
+        return <Navigate to="/inicio" replace />;
     }
 
     return children;

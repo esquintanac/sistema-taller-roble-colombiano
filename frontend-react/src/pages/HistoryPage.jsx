@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import DataTable from "../components/ui/DataTable";
 import StatusBadge from "../components/ui/StatusBadge";
 import Button from "../components/ui/Button";
-import Alert from "../components/ui/Alert";
+import Modal from "../components/ui/Modal";
 import historialService, { mapearRegistro } from "../services/historialService";
 import { mensajeDeError } from "../utils/descargas";
 import Spinner from "../components/ui/Spinner";
@@ -95,12 +95,19 @@ export default function HistoryPage() {
           <Spinner texto="Cargando historial…" />
         </div>
       ) : error ? (
-        <div className="card">
-          <Alert tipo="error" titulo="No se pudo cargar el historial" mensaje={error} />
-          <Button variante="secondary" onClick={cargarHistorial}>
-            Reintentar
-          </Button>
-        </div>
+        // La página de fondo queda vacía tras el fallo de carga, así que
+        // el modal no se cierra con Escape ni pulsando fuera: solo con
+        // sus dos botones (reintentar o volver al panel).
+        <Modal
+          tipo="error"
+          bloquearCierre
+          titulo="No se pudo cargar el historial"
+          mensaje={error}
+          textoAceptar="Reintentar"
+          textoCancelar="Volver al panel"
+          onAceptar={cargarHistorial}
+          onCancelar={() => navigate("/inicio")}
+        />
       ) : (
         <>
           {/* Indicadores del historial. Salen de la lista ya cargada: sin

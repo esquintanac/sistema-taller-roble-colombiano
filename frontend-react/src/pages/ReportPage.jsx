@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import Stepper from "../components/ui/Stepper";
 import Alert from "../components/ui/Alert";
 import Button from "../components/ui/Button";
+import Modal from "../components/ui/Modal";
 import modelosService from "../services/modelosService";
 import { guardarBlob, mensajeDeError } from "../utils/descargas";
 
@@ -115,7 +116,17 @@ export default function ReportPage() {
         mensaje={`${modeloCreado.nombre_modelo} — ${medidas} — ${cliente}`}
       />
 
-      {aviso && <Alert tipo={aviso.tipo} titulo={aviso.titulo} mensaje={aviso.mensaje} />}
+      {/* Cada descarga anuncia su resultado con ventana emergente, igual
+          que en FacturasPage. El banner de "Diseño confirmado" de arriba
+          es estado de la pantalla y se queda en línea. */}
+      {aviso && (
+        <Modal
+          tipo={aviso.tipo}
+          titulo={aviso.titulo}
+          mensaje={aviso.mensaje}
+          onAceptar={() => setAviso(null)}
+        />
+      )}
 
       <div className="card">
         <h2>Reportes del modelo</h2>

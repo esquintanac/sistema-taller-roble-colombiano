@@ -25,6 +25,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button";
 import Alert from "../components/ui/Alert";
+import Modal from "../components/ui/Modal";
 import StatusBadge from "../components/ui/StatusBadge";
 import historialService, { formatearFecha, mapearRegistro } from "../services/historialService";
 import modelosService from "../services/modelosService";
@@ -290,23 +291,21 @@ export default function AdminDesignDetailPage() {
   }
 
   if (error || !registro) {
+    // Fondo vacío tras el fallo de carga: el modal no se cierra con
+    // Escape ni con clic fuera; solo se sale volviendo al historial o
+    // reintentando (bloquearCierre).
     return (
       <div className="container" style={{ paddingTop: 30 }}>
-        <div className="card">
-          <Alert
-            tipo="error"
-            titulo="No se pudo cargar el diseño"
-            mensaje={error || "El registro no existe."}
-          />
-          <div style={{ display: "flex", gap: 10 }}>
-            <Button variante="secondary" onClick={() => navigate("/historial")}>
-              ← Volver al historial
-            </Button>
-            <Button variante="primary" onClick={cargarDetalle}>
-              Reintentar
-            </Button>
-          </div>
-        </div>
+        <Modal
+          tipo="error"
+          bloquearCierre
+          titulo="No se pudo cargar el diseño"
+          mensaje={error || "El registro no existe."}
+          textoAceptar="Reintentar"
+          textoCancelar="← Volver al historial"
+          onAceptar={cargarDetalle}
+          onCancelar={() => navigate("/historial")}
+        />
       </div>
     );
   }
@@ -418,7 +417,16 @@ export default function AdminDesignDetailPage() {
         />
       </div>
 
-      {aviso && <Alert tipo={aviso.tipo} titulo={aviso.titulo} mensaje={aviso.mensaje} />}
+      {/* Resultado de las acciones (marcar revisado, descargas PDF,
+          asociar melanina): ventana emergente, como en FacturasPage. */}
+      {aviso && (
+        <Modal
+          tipo={aviso.tipo}
+          titulo={aviso.titulo}
+          mensaje={aviso.mensaje}
+          onAceptar={() => setAviso(null)}
+        />
+      )}
       {registro.comentario && (
         <Alert tipo="info" titulo="Comentario del registro" mensaje={registro.comentario} />
       )}
