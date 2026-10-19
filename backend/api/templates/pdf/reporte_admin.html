@@ -1,3 +1,4 @@
+{% load formato_pesos %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -26,13 +27,13 @@
                 <tr>
                     <td>{{ linea.nombre_material }}</td>
                     <td>{{ linea.cantidad }}</td>
-                    <td>{{ linea.precio_unitario }}</td>
-                    <td>{{ linea.subtotal }}</td>
+                    <td>{{ linea.precio_unitario|pesos }}</td>
+                    <td>{{ linea.subtotal|pesos }}</td>
                 </tr>
             {% endfor %}
             <tr class="total-row">
                 <td colspan="3">Costo total</td>
-                <td>${{ factura.valor_total }}</td>
+                <td>{{ factura.valor_total|pesos }}</td>
             </tr>
         </tbody>
     </table>

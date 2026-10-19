@@ -1,3 +1,4 @@
+{% load formato_pesos %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -47,12 +48,12 @@
                         <td>{{ m.nombre_material }}</td>
                         <td class="numero">{{ m.cantidad }}</td>
                         <td>{{ m.unidad_medida }}</td>
-                        <td class="numero">${{ m.costo_utilizado }}</td>
+                        <td class="numero">{{ m.costo_utilizado|pesos }}</td>
                     </tr>
                 {% endfor %}
                 <tr class="total">
                     <td colspan="3">Costo total de materiales</td>
-                    <td class="numero">${{ total }}</td>
+                    <td class="numero">{{ total|pesos }}</td>
                 </tr>
             </tbody>
         </table>
