@@ -4,6 +4,7 @@
 import FormField from "../ui/FormField";
 import Button from "../ui/Button";
 import ModelTypeSelector from "./ModelTypeSelector";
+import { LIMITES_RANGO } from "./limitesModelo";
 
 export default function DimensionsStep({ datos, errores, onChange, onTipoChange, onSiguiente }) {
   return (
@@ -16,10 +17,25 @@ export default function DimensionsStep({ datos, errores, onChange, onTipoChange,
         <ModelTypeSelector tipoSeleccionado={datos.tipoModelo} onSelect={onTipoChange} />
       </div>
 
+      {/* Los campos de medida son texto con inputMode decimal para poder
+          cortar la escritura en vivo (maxLength no aplica a number):
+          máximo 3 dígitos enteros y 1 decimal (1 mm de precisión). */}
       <div className="grid-3">
-        <FormField label="Alto (cm)" name="alto" tipo="number" value={datos.alto} onChange={onChange} error={errores.alto} requerido />
-        <FormField label="Ancho (cm)" name="ancho" tipo="number" value={datos.ancho} onChange={onChange} error={errores.ancho} requerido />
-        <FormField label="Largo (cm)" name="largo" tipo="number" value={datos.largo} onChange={onChange} error={errores.largo} requerido />
+        <FormField
+          label="Alto (cm)" name="alto" tipo="text" inputMode="decimal" maxLength={5}
+          value={datos.alto} onChange={onChange} error={errores.alto}
+          hint={`Entre ${LIMITES_RANGO.alto.min} y ${LIMITES_RANGO.alto.max} cm`} requerido
+        />
+        <FormField
+          label="Ancho (cm)" name="ancho" tipo="text" inputMode="decimal" maxLength={5}
+          value={datos.ancho} onChange={onChange} error={errores.ancho}
+          hint={`Entre ${LIMITES_RANGO.ancho.min} y ${LIMITES_RANGO.ancho.max} cm`} requerido
+        />
+        <FormField
+          label="Largo (cm)" name="largo" tipo="text" inputMode="decimal" maxLength={5}
+          value={datos.largo} onChange={onChange} error={errores.largo}
+          hint={`Entre ${LIMITES_RANGO.largo.min} y ${LIMITES_RANGO.largo.max} cm`} requerido
+        />
       </div>
 
       <FormField

@@ -9,6 +9,7 @@ import FormField from "../ui/FormField";
 import ToggleSwitch from "../ui/ToggleSwitch";
 import Button from "../ui/Button";
 import { etiquetaCliente } from "../../services/clientesService";
+import { MAX_OBSERVACIONES, LIMITES_RANGO } from "./limitesModelo";
 
 // Acabado de la melanina (opcional). Mismos valores que el formulario de
 // referencia del proyecto.
@@ -82,10 +83,13 @@ export default function FinishesStep({
         <FormField
           label="Altura del zócalo (cm)"
           name="alturaZocalo"
-          tipo="number"
+          tipo="text"
+          inputMode="decimal"
+          maxLength={4}
           value={datos.alturaZocalo}
           onChange={onChange}
           error={errores.alturaZocalo}
+          hint={`Entre ${LIMITES_RANGO.alturaZocalo.min} y ${LIMITES_RANGO.alturaZocalo.max} cm, menor que el alto (${datos.alto} cm)`}
           requerido
         />
       )}
@@ -129,7 +133,15 @@ export default function FinishesStep({
         }
         opciones={opcionesClientes}
       />
-      <FormField label="Observaciones" name="observaciones" as="textarea" value={datos.observaciones} onChange={onChange} />
+      <FormField
+        label="Observaciones"
+        name="observaciones"
+        as="textarea"
+        value={datos.observaciones}
+        onChange={onChange}
+        maxLength={MAX_OBSERVACIONES}
+        hint={`${datos.observaciones.length}/${MAX_OBSERVACIONES} caracteres (máximo)`}
+      />
 
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
         <Button variante="secondary" onClick={onAtras}>← Atrás</Button>

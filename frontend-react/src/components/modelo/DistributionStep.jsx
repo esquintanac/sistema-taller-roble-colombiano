@@ -4,8 +4,21 @@
 import FormField from "../ui/FormField";
 import ToggleSwitch from "../ui/ToggleSwitch";
 import Button from "../ui/Button";
+import { ALTO_POR_CAJON, LIMITES_RANGO } from "./limitesModelo";
 
 export default function DistributionStep({ datos, errores, onChange, onToggle, onSiguiente, onAtras }) {
+  // Advertencia informativa (no bloquea el registro): cada cajón ocupa
+  // ~15 cm de alto (fondo + guía). Si la suma no cabe en el alto del
+  // mueble, el carpintero debe ajustar cantidades o medidas.
+  const altoMueble = Number(datos.alto);
+  const cajones = Number(datos.numCajones);
+  const advertenciaCajones =
+    datos.llevaCajones &&
+    Number.isFinite(altoMueble) &&
+    Number.isFinite(cajones) &&
+    cajones * ALTO_POR_CAJON > altoMueble
+      ? `Advertencia: ${cajones} cajones pueden no caber en ${datos.alto} cm de alto (~${ALTO_POR_CAJON} cm por cajón).`
+      : null;
   return (
     <div>
       <h2>Nuevo Modelo</h2>
@@ -26,12 +39,22 @@ export default function DistributionStep({ datos, errores, onChange, onToggle, o
 
       <ToggleSwitch checked={datos.llevaCajones} onChange={() => onToggle("llevaCajones")} label="¿Lleva cajones?" />
       {datos.llevaCajones && (
-        <FormField label="¿Cuántos cajones?" name="numCajones" tipo="number" value={datos.numCajones} onChange={onChange} error={errores.numCajones} requerido />
+        <FormField
+          label="¿Cuántos cajones?" name="numCajones" tipo="text" inputMode="numeric" maxLength={2}
+          value={datos.numCajones} onChange={onChange} error={errores.numCajones}
+          hint={advertenciaCajones || `Entre ${LIMITES_RANGO.numCajones.min} y ${LIMITES_RANGO.numCajones.max} cajones`}
+          requerido
+        />
       )}
 
       <ToggleSwitch checked={datos.llevaBarra} onChange={() => onToggle("llevaBarra")} label="¿Lleva barra colgadora?" />
       {datos.llevaBarra && (
-        <FormField label="Altura de la barra (cm)" name="alturaBarra" tipo="number" value={datos.alturaBarra} onChange={onChange} error={errores.alturaBarra} requerido />
+        <FormField
+          label="Altura de la barra (cm)" name="alturaBarra" tipo="text" inputMode="decimal" maxLength={5}
+          value={datos.alturaBarra} onChange={onChange} error={errores.alturaBarra}
+          hint={`Entre ${LIMITES_RANGO.alturaBarra.min} y ${LIMITES_RANGO.alturaBarra.max} cm, menor que el alto (${datos.alto} cm)`}
+          requerido
+        />
       )}
 
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>

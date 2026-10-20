@@ -14,19 +14,85 @@ class ModeloService:
     dao = ModeloDAO()
     historial_dao = HistorialDAO()
 
+    # Reglas de límite del asistente de modelos (espejo del frontend en
+    # ModelWizard/limitesModelo.js). Los mínimos no son cosméticos: con un
+    # ancho menor que 2×grosor, los entrepaños del cálculo quedan con
+    # medidas negativas. Todos los topes quedan muy por debajo de las
+    # columnas reales de MySQL (decimal(10,2) e int), así que no hay choque.
+    RANGO_MEDIDAS = {
+        "alto": (10, 300),
+        "ancho": (10, 500),
+        "largo": (10, 120),
+    }
+    # Campos opcionales: 0 significa "elemento apagado" (el wizard no los
+    # envía). Los cuatro primeros son contadores y deben ser enteros.
+    RANGO_OPCIONALES = {
+        "puertas": (0, 4),
+        "compartimientos": (0, 6),
+        "entrepanos_compartimientos": (0, 8),
+        "cajones": (0, 10),
+        "altura_barra_colgadora": (0, 300),
+        "altura_zocalo": (0, 30),
+    }
+    CONTADORES_ENTEROS = {
+        "puertas", "compartimientos", "entrepanos_compartimientos", "cajones",
+    }
+
     @staticmethod
     def validar_datos(datos, es_actualizacion=False):
         errores = []
 
-        campos_numericos_obligatorios = ["alto", "ancho", "largo"]
-        for campo in campos_numericos_obligatorios:
+        for campo, (minimo, maximo) in ModeloService.RANGO_MEDIDAS.items():
             if not es_actualizacion or campo in datos:
                 try:
                     valor = float(datos.get(campo, -1))
-                    if valor <= 0:
-                        errores.append(f"El campo {campo} debe ser mayor a 0.")
+                    if valor < minimo or valor > maximo:
+                        errores.append(
+                            f"El campo {campo} debe estar entre {minimo} y {maximo} cm."
+                        )
                 except (ValueError, TypeError):
                     errores.append(f"El campo {campo} debe ser un número válido.")
+
+        # Campos opcionales fuera de rango. Los contadores deben ser ENTEROS
+        # además de estar en rango: crear() los convierte con int() y un
+        # decimal dispararía un error 500 en el servidor.
+        for campo, (minimo, maximo) in ModeloService.RANGO_OPCIONALES.items():
+            if not es_actualizacion or campo in datos:
+                try:
+                    valor = float(datos.get(campo, 0) or 0)
+                    if valor < minimo or valor > maximo:
+                        errores.append(
+                            f"El campo {campo} debe estar entre {minimo} y {maximo}."
+                        )
+                    elif campo in ModeloService.CONTADORES_ENTEROS and valor != int(valor):
+                        errores.append(f"El campo {campo} debe ser un número entero.")
+                except (ValueError, TypeError):
+                    errores.append(f"El campo {campo} debe ser un número válido.")
+
+        # Columna Descripcion VARCHAR(500): MySQL rechazaría un INSERT más largo.
+        if not es_actualizacion or "descripcion" in datos:
+            if len(datos.get("descripcion", "") or "") > 500:
+                errores.append("La descripción no puede superar los 500 caracteres.")
+
+        # Reglas entre campos (espejo del wizard): la barra y el zócalo deben
+        # caber dentro de la altura del mueble. 0 = elemento apagado.
+        try:
+            alto = float(datos.get("alto", 0) or 0)
+        except (ValueError, TypeError):
+            alto = 0
+        if alto > 0:
+            for campo, mensaje in (
+                ("altura_barra_colgadora",
+                 "La altura de la barra colgadora debe ser menor que el alto del modelo."),
+                ("altura_zocalo",
+                 "La altura del zócalo debe ser menor que el alto del modelo."),
+            ):
+                try:
+                    valor = float(datos.get(campo, 0) or 0)
+                except (ValueError, TypeError):
+                    continue
+                if valor > 0 and valor >= alto:
+                    errores.append(mensaje)
 
         if not es_actualizacion or "id_carpintero" in datos:
             if not datos.get("id_carpintero"):

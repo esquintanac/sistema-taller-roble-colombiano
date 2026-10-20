@@ -11,6 +11,8 @@ import DimensionsStep from "./DimensionsStep";
 import DistributionStep from "./DistributionStep";
 import FinishesStep from "./FinishesStep";
 import clientesService, { etiquetaCliente } from "../../services/clientesService";
+import { soloDigitos, limitarDecimal } from "../../utils/numeros";
+import { LIMITES_RANGO, MAX_OBSERVACIONES } from "./limitesModelo";
 
 const DATOS_INICIALES = {
   tipoModelo: "Closet", alto: "", ancho: "", largo: "", grosor: "",
@@ -92,7 +94,21 @@ export default function ModelWizard() {
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setDatos({ ...datos, [name]: value });
+
+    // Límite de dígitos en vivo: maxLength no aplica a campos tipo number,
+    // así que los numéricos son texto con inputMode y se filtran aquí
+    // (mismo patrón que Materiales). Las medidas aceptan un decimal porque
+    // 1 cm con un decimal = 1 mm, la precisión real de corte del taller.
+    let valor = value;
+    if (name === "numCajones") {
+      valor = soloDigitos(value).slice(0, 2);
+    } else if (["alto", "ancho", "largo", "alturaBarra", "alturaZocalo"].includes(name)) {
+      valor = limitarDecimal(value, 3, 1);
+    } else if (name === "observaciones") {
+      valor = value.slice(0, MAX_OBSERVACIONES);
+    }
+
+    setDatos({ ...datos, [name]: valor });
     // Al corregir un campo, se limpia su error inmediatamente
     if (errores[name]) {
       setErrores({ ...errores, [name]: undefined });
@@ -126,9 +142,63 @@ export default function ModelWizard() {
     return Object.keys(nuevosErrores).length === 0;
   }
 
+  // Valida los campos numéricos indicados contra sus rangos de negocio y
+  // las reglas entre campos (barra/zócalo deben caber dentro del alto del
+  // mueble). Los vacíos no se tocan aquí: ya los cubre validarCampos como
+  // obligatorios cuando el interruptor correspondiente está activo.
+  function validarRangos(campos) {
+    const nuevosErrores = {};
+
+    for (const campo of campos) {
+      const regla = LIMITES_RANGO[campo];
+      const texto = String(datos[campo] ?? "").trim();
+      if (!texto) continue;
+      const numero = Number(texto);
+      if (!Number.isFinite(numero)) {
+        nuevosErrores[campo] = `${regla.etiqueta} debe ser un número válido.`;
+        continue;
+      }
+      if (numero < regla.min || numero > regla.max) {
+        nuevosErrores[campo] =
+          `${regla.etiqueta} debe estar entre ${regla.min} y ${regla.max}` +
+          `${regla.unidad ? ` ${regla.unidad}` : ""}.`;
+      }
+    }
+
+    // Reglas entre campos: una barra a la altura del techo del mueble o un
+    // zócalo más alto que el mueble son errores de registro, no preferencias.
+    const alto = Number(datos.alto);
+    if (Number.isFinite(alto) && alto > 0) {
+      const barra = Number(datos.alturaBarra);
+      if (
+        campos.includes("alturaBarra") && datos.llevaBarra &&
+        Number.isFinite(barra) && barra >= alto
+      ) {
+        nuevosErrores.alturaBarra =
+          `La altura de la barra debe ser menor que el alto del mueble (${alto} cm).`;
+      }
+      const zocalo = Number(datos.alturaZocalo);
+      if (
+        campos.includes("alturaZocalo") && datos.llevaZocalo &&
+        Number.isFinite(zocalo) && zocalo >= alto
+      ) {
+        nuevosErrores.alturaZocalo =
+          `La altura del zócalo debe ser menor que el alto del mueble (${alto} cm).`;
+      }
+    }
+
+    if (Object.keys(nuevosErrores).length === 0) return true;
+    setErrores((prev) => ({ ...prev, ...nuevosErrores }));
+    return false;
+  }
+
   function irA1B() {
     const obligatorios = ["alto", "ancho", "largo", "grosor"];
-    if (validarCampos(obligatorios)) setSubPaso("1B");
+    if (!validarCampos(obligatorios)) return;
+    // Mínimos reales del taller: medidas muy pequeñas dejarían entrepaños
+    // con medidas negativas (ancho - 2×grosor) en el cálculo del backend.
+    if (!validarRangos(["alto", "ancho", "largo"])) return;
+    setSubPaso("1B");
   }
 
   // Campos obligatorios de los toggles indicados, solo si están activados.
@@ -142,7 +212,11 @@ export default function ModelWizard() {
       "entrepanos",
       ...camposDeToggles(["llevaCajones", "llevaBarra"]),
     ];
-    if (validarCampos(obligatorios)) setSubPaso("1C");
+    if (!validarCampos(obligatorios)) return;
+    // Rangos de cajones/barra y la regla barra < alto: ambos valores ya se
+    // conocen en este punto (el alto se validó en el paso 1A).
+    if (!validarRangos(["numCajones", "alturaBarra"])) return;
+    setSubPaso("1C");
   }
 
   function handleRegistrar() {
@@ -165,6 +239,10 @@ export default function ModelWizard() {
       ]),
     ];
     if (!validarCampos(obligatorios)) return;
+    // Revalida todos los rangos y las reglas entre campos: el usuario pudo
+    // retroceder y cambiar una medida después de haberla validado al avanzar
+    // (p. ej. bajar el alto sin ajustar la altura de la barra).
+    if (!validarRangos(Object.keys(LIMITES_RANGO))) return;
 
     // Se guarda también el nombre legible del cliente para que el resumen
     // de validación lo muestre sin volver a consultar el backend.
