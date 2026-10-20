@@ -188,7 +188,7 @@ export default function AdminDesignDetailPage() {
       setAviso({
         tipo: "success",
         titulo: "Diseño revisado",
-        mensaje: "El registro quedó marcado como Revisado (RF9).",
+        mensaje: "El registro quedó marcado como Revisado.",
       });
     } catch (e) {
       setAviso({
