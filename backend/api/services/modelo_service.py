@@ -34,6 +34,16 @@ class ModeloService:
         "altura_barra_colgadora": (0, 300),
         "altura_zocalo": (0, 30),
     }
+    # Mínimo cuando el elemento está ENCENDIDO (valor > 0). El 0 significa
+    # "elemento apagado": el frontend lo envía así cuando su interruptor está
+    # off, y en ese caso no hay nada que medir. Estos mínimos son los mismos
+    # del wizard (frontend-react/src/components/modelo/limitesModelo.js): una
+    # barra colgada a 15 cm del piso no deja espacio para colgar ropa y un
+    # zócalo de 0 cm no es un zócalo.
+    RANGO_MINIMO_ENCENDIDO = {
+        "altura_barra_colgadora": 30,
+        "altura_zocalo": 1,
+    }
     CONTADORES_ENTEROS = {
         "puertas", "compartimientos", "entrepanos_compartimientos", "cajones",
     }
@@ -66,6 +76,16 @@ class ModeloService:
                         )
                     elif campo in ModeloService.CONTADORES_ENTEROS and valor != int(valor):
                         errores.append(f"El campo {campo} debe ser un número entero.")
+                    elif (
+                        campo in ModeloService.RANGO_MINIMO_ENCENDIDO
+                        and 0 < valor < ModeloService.RANGO_MINIMO_ENCENDIDO[campo]
+                    ):
+                        # Elemento encendido con una medida por debajo del
+                        # mínimo del taller (barra de 12 cm, zócalo de 0.5 cm).
+                        errores.append(
+                            f"El campo {campo} debe ser al menos "
+                            f"{ModeloService.RANGO_MINIMO_ENCENDIDO[campo]} cm."
+                        )
                 except (ValueError, TypeError):
                     errores.append(f"El campo {campo} debe ser un número válido.")
 

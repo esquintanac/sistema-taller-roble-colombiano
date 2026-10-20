@@ -27,3 +27,75 @@ export const MAX_OBSERVACIONES = 500;
 // advertencia informativa del paso de Distribución: nunca bloquea el
 // registro, avisa al carpintero para que ajuste números o medidas.
 export const ALTO_POR_CAJON = 15;
+
+// Interruptor que decide si un campo aplica. Es el recíproco de
+// CAMPOS_POR_TOGGLE del wizard: si el interruptor está apagado, el campo
+// se oculta y su valor residual NO debe validarse (escribir "15" en la
+// barra y apagarla no debe bloquear el registro con un error invisible).
+export const TOGGLE_DE_CAMPO = {
+  numCajones: "llevaCajones",
+  alturaBarra: "llevaBarra",
+  alturaZocalo: "llevaZocalo",
+};
+
+/**
+ * Valida los campos numéricos indicados contra sus rangos de negocio y
+ * las reglas entre campos (barra y zócalo deben caber dentro del alto del
+ * mueble).
+ *
+ * Los campos vacíos se ignoran: los cubre la validación de obligatorios
+ * del wizard, que solo exige los de los interruptores activos.
+ *
+ * @param {object} datos estado actual del formulario.
+ * @param {string[]} campos claves a validar.
+ * @returns {object} mapa {campo: mensaje} con los errores encontrados.
+ */
+export function validarRangos(datos, campos) {
+  const errores = {};
+
+  for (const campo of campos) {
+    const toggle = TOGGLE_DE_CAMPO[campo];
+    if (toggle && !datos[toggle]) continue;
+
+    const regla = LIMITES_RANGO[campo];
+    if (!regla) continue;
+
+    const texto = String(datos[campo] ?? "").trim();
+    if (!texto) continue;
+
+    const numero = Number(texto);
+    if (!Number.isFinite(numero)) {
+      errores[campo] = `${regla.etiqueta} debe ser un número válido.`;
+      continue;
+    }
+    if (numero < regla.min || numero > regla.max) {
+      errores[campo] =
+        `${regla.etiqueta} debe estar entre ${regla.min} y ${regla.max}` +
+        `${regla.unidad ? ` ${regla.unidad}` : ""}.`;
+    }
+  }
+
+  // Reglas entre campos: una barra a la altura del techo del mueble o un
+  // zócalo más alto que el mueble son errores de registro, no preferencias.
+  const alto = Number(datos.alto);
+  if (Number.isFinite(alto) && alto > 0) {
+    const barra = Number(datos.alturaBarra);
+    if (
+      campos.includes("alturaBarra") && datos.llevaBarra &&
+      Number.isFinite(barra) && barra >= alto
+    ) {
+      errores.alturaBarra =
+        `La altura de la barra debe ser menor que el alto del mueble (${alto} cm).`;
+    }
+    const zocalo = Number(datos.alturaZocalo);
+    if (
+      campos.includes("alturaZocalo") && datos.llevaZocalo &&
+      Number.isFinite(zocalo) && zocalo >= alto
+    ) {
+      errores.alturaZocalo =
+        `La altura del zócalo debe ser menor que el alto del mueble (${alto} cm).`;
+    }
+  }
+
+  return errores;
+}

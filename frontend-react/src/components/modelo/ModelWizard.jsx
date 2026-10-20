@@ -12,7 +12,7 @@ import DistributionStep from "./DistributionStep";
 import FinishesStep from "./FinishesStep";
 import clientesService, { etiquetaCliente } from "../../services/clientesService";
 import { soloDigitos, limitarDecimal } from "../../utils/numeros";
-import { LIMITES_RANGO, MAX_OBSERVACIONES } from "./limitesModelo";
+import { LIMITES_RANGO, MAX_OBSERVACIONES, validarRangos as validarRangosCampos } from "./limitesModelo";
 
 const DATOS_INICIALES = {
   tipoModelo: "Closet", alto: "", ancho: "", largo: "", grosor: "",
@@ -146,47 +146,10 @@ export default function ModelWizard() {
   // las reglas entre campos (barra/zócalo deben caber dentro del alto del
   // mueble). Los vacíos no se tocan aquí: ya los cubre validarCampos como
   // obligatorios cuando el interruptor correspondiente está activo.
+  // La lógica vive en limitesModelo.js: es una única regla, compartida con
+  // sus pruebas en node, y no se duplica aquí.
   function validarRangos(campos) {
-    const nuevosErrores = {};
-
-    for (const campo of campos) {
-      const regla = LIMITES_RANGO[campo];
-      const texto = String(datos[campo] ?? "").trim();
-      if (!texto) continue;
-      const numero = Number(texto);
-      if (!Number.isFinite(numero)) {
-        nuevosErrores[campo] = `${regla.etiqueta} debe ser un número válido.`;
-        continue;
-      }
-      if (numero < regla.min || numero > regla.max) {
-        nuevosErrores[campo] =
-          `${regla.etiqueta} debe estar entre ${regla.min} y ${regla.max}` +
-          `${regla.unidad ? ` ${regla.unidad}` : ""}.`;
-      }
-    }
-
-    // Reglas entre campos: una barra a la altura del techo del mueble o un
-    // zócalo más alto que el mueble son errores de registro, no preferencias.
-    const alto = Number(datos.alto);
-    if (Number.isFinite(alto) && alto > 0) {
-      const barra = Number(datos.alturaBarra);
-      if (
-        campos.includes("alturaBarra") && datos.llevaBarra &&
-        Number.isFinite(barra) && barra >= alto
-      ) {
-        nuevosErrores.alturaBarra =
-          `La altura de la barra debe ser menor que el alto del mueble (${alto} cm).`;
-      }
-      const zocalo = Number(datos.alturaZocalo);
-      if (
-        campos.includes("alturaZocalo") && datos.llevaZocalo &&
-        Number.isFinite(zocalo) && zocalo >= alto
-      ) {
-        nuevosErrores.alturaZocalo =
-          `La altura del zócalo debe ser menor que el alto del mueble (${alto} cm).`;
-      }
-    }
-
+    const nuevosErrores = validarRangosCampos(datos, campos);
     if (Object.keys(nuevosErrores).length === 0) return true;
     setErrores((prev) => ({ ...prev, ...nuevosErrores }));
     return false;
