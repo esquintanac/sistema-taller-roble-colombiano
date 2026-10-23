@@ -35,6 +35,15 @@ export default function RegisterForm() {
     const [verificacion, setVerificacion] = useState(null);
     const navigate = useNavigate();
 
+    const LIMITE_USUARIO_MIN = 4;
+    const LIMITE_USUARIO_MAX = 50;
+    const LIMITE_NOMBRE_MAX = 255;
+    const LIMITE_APELLIDO_MAX = 255;
+    const LIMITE_TELEFONO_MAX = 15;
+    const LIMITE_CORREO_MAX = 100;
+    const LIMITE_CONTRASENA_MIN = 6;
+    const LIMITE_CONTRASENA_MAX = 128;
+
     function handleChange(e) {
         setValores({ ...valores, [e.target.name]: e.target.value });
     }
@@ -44,6 +53,37 @@ export default function RegisterForm() {
         Object.entries(valores).forEach(([campo, val]) => {
             if (!val.trim()) nuevosErrores[campo] = "Este campo es obligatorio.";
         });
+
+        const nombre = valores.nombre.trim();
+        const apellidos = valores.apellidos.trim();
+        const telefono = valores.telefono.trim();
+        const correo = valores.correo.trim();
+        const usuario = valores.usuario.trim();
+        const contrasena = valores.contrasena.trim();
+
+        if (nombre && nombre.length > LIMITE_NOMBRE_MAX) {
+            nuevosErrores.nombre = `El nombre no puede exceder los ${LIMITE_NOMBRE_MAX} caracteres.`;
+        }
+        if (apellidos && apellidos.length > LIMITE_APELLIDO_MAX) {
+            nuevosErrores.apellidos = `Los apellidos no pueden exceder los ${LIMITE_APELLIDO_MAX} caracteres.`;
+        }
+        if (telefono && telefono.length > LIMITE_TELEFONO_MAX) {
+            nuevosErrores.telefono = `El teléfono no puede exceder los ${LIMITE_TELEFONO_MAX} caracteres.`;
+        }
+        if (correo && correo.length > LIMITE_CORREO_MAX) {
+            nuevosErrores.correo = `El correo no puede exceder los ${LIMITE_CORREO_MAX} caracteres.`;
+        }
+        if (usuario) {
+            if (usuario.length < LIMITE_USUARIO_MIN || usuario.length > LIMITE_USUARIO_MAX) {
+                nuevosErrores.usuario = `El usuario debe tener entre ${LIMITE_USUARIO_MIN} y ${LIMITE_USUARIO_MAX} caracteres.`;
+            }
+        }
+        if (contrasena) {
+            if (contrasena.length < LIMITE_CONTRASENA_MIN || contrasena.length > LIMITE_CONTRASENA_MAX) {
+                nuevosErrores.contrasena = `La contraseña debe tener entre ${LIMITE_CONTRASENA_MIN} y ${LIMITE_CONTRASENA_MAX} caracteres.`;
+            }
+        }
+
         setErrores(nuevosErrores);
         return Object.keys(nuevosErrores).length === 0;
     }
@@ -119,12 +159,12 @@ export default function RegisterForm() {
         <Alert tipo="error" mensaje={erroresServidor.join(" ")} />
       )}
 
-      <FormField label="Nombre" name="nombre" value={valores.nombre} onChange={handleChange} error={errores.nombre} requerido />
-      <FormField label="Apellidos" name="apellidos" value={valores.apellidos} onChange={handleChange} error={errores.apellidos} requerido />
-      <FormField label="Número telefónico" name="telefono" tipo="tel" value={valores.telefono} onChange={handleChange} error={errores.telefono} requerido />
-      <FormField label="Correo electrónico" name="correo" tipo="email" value={valores.correo} onChange={handleChange} error={errores.correo} requerido />
-      <FormField label="Usuario" name="usuario" value={valores.usuario} onChange={handleChange} error={errores.usuario} requerido />
-      <FormField label="Contraseña" name="contrasena" tipo="password" value={valores.contrasena} onChange={handleChange} error={errores.contrasena} requerido />
+      <FormField label="Nombre" name="nombre" value={valores.nombre} onChange={handleChange} error={errores.nombre} requerido maxLength={LIMITE_NOMBRE_MAX} hint={`Máximo ${LIMITE_NOMBRE_MAX} caracteres`} />
+      <FormField label="Apellidos" name="apellidos" value={valores.apellidos} onChange={handleChange} error={errores.apellidos} requerido maxLength={LIMITE_APELLIDO_MAX} hint={`Máximo ${LIMITE_APELLIDO_MAX} caracteres`} />
+      <FormField label="Número telefónico" name="telefono" tipo="tel" value={valores.telefono} onChange={handleChange} error={errores.telefono} requerido maxLength={LIMITE_TELEFONO_MAX} hint={`Máximo ${LIMITE_TELEFONO_MAX} caracteres`} />
+      <FormField label="Correo electrónico" name="correo" tipo="email" value={valores.correo} onChange={handleChange} error={errores.correo} requerido maxLength={LIMITE_CORREO_MAX} hint={`Máximo ${LIMITE_CORREO_MAX} caracteres`} />
+      <FormField label="Usuario" name="usuario" value={valores.usuario} onChange={handleChange} error={errores.usuario} requerido maxLength={LIMITE_USUARIO_MAX} hint={`Entre ${LIMITE_USUARIO_MIN} y ${LIMITE_USUARIO_MAX} caracteres`} />
+      <FormField label="Contraseña" name="contrasena" tipo="password" value={valores.contrasena} onChange={handleChange} error={errores.contrasena} requerido maxLength={LIMITE_CONTRASENA_MAX} hint={`Entre ${LIMITE_CONTRASENA_MIN} y ${LIMITE_CONTRASENA_MAX} caracteres`} />
 
       <div className="form-group">
         <label className="form-label">Rol <span style={{ color: "var(--error)" }}>*</span></label>

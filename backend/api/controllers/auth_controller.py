@@ -177,14 +177,16 @@ def iniciar_sesion(request):
     NO entrega JWT: los tokens recién se emiten en
     /api/auth/verificacion/confirmar/ tras validar el código (RNF).
     """
-    usuario_input = request.data.get("usuario", "")
-    contrasena_input = request.data.get("contrasena", "")
-
-    if not usuario_input or not contrasena_input:
+    datos = request.data
+    errores = AuthService.validar_datos_login(datos)
+    if errores:
         return Response(
-            {"exito": False, "mensaje": "Usuario y contraseña son obligatorios."},
+            {"exito": False, "errores": errores},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+    usuario_input = datos.get("usuario", "")
+    contrasena_input = datos.get("contrasena", "")
 
     usuario = AuthService.autenticar(usuario_input, contrasena_input)
 

@@ -18,14 +18,32 @@ export default function LoginForm() {
   const { iniciarVerificacion } = useAuth();
   const navigate = useNavigate();
 
+  const LIMITE_USUARIO_MIN = 4;
+  const LIMITE_USUARIO_MAX = 50;
+  const LIMITE_CONTRASENA_MIN = 6;
+  const LIMITE_CONTRASENA_MAX = 128;
+
   function handleChange(e) {
     setValores({ ...valores, [e.target.name]: e.target.value });
   }
 
   function validar() {
     const nuevosErrores = {};
-    if (!valores.usuario.trim()) nuevosErrores.usuario = "Este campo es obligatorio.";
-    if (!valores.contrasena.trim()) nuevosErrores.contrasena = "Este campo es obligatorio.";
+    const u = valores.usuario.trim();
+    const c = valores.contrasena.trim();
+
+    if (!u) {
+      nuevosErrores.usuario = "Este campo es obligatorio.";
+    } else if (u.length < LIMITE_USUARIO_MIN || u.length > LIMITE_USUARIO_MAX) {
+      nuevosErrores.usuario = `El usuario debe tener entre ${LIMITE_USUARIO_MIN} y ${LIMITE_USUARIO_MAX} caracteres.`;
+    }
+
+    if (!c) {
+      nuevosErrores.contrasena = "Este campo es obligatorio.";
+    } else if (c.length < LIMITE_CONTRASENA_MIN || c.length > LIMITE_CONTRASENA_MAX) {
+      nuevosErrores.contrasena = `La contraseña debe tener entre ${LIMITE_CONTRASENA_MIN} y ${LIMITE_CONTRASENA_MAX} caracteres.`;
+    }
+
     setErrores(nuevosErrores);
     return Object.keys(nuevosErrores).length === 0;
   }
@@ -64,6 +82,8 @@ export default function LoginForm() {
         onChange={handleChange}
         error={errores.usuario}
         requerido
+        maxLength={LIMITE_USUARIO_MAX}
+        hint={`Entre ${LIMITE_USUARIO_MIN} y ${LIMITE_USUARIO_MAX} caracteres`}
         placeholder="Ingresa tu nombre de usuario"
       />
 
@@ -75,6 +95,8 @@ export default function LoginForm() {
         onChange={handleChange}
         error={errores.contrasena}
         requerido
+        maxLength={LIMITE_CONTRASENA_MAX}
+        hint={`Entre ${LIMITE_CONTRASENA_MIN} y ${LIMITE_CONTRASENA_MAX} caracteres`}
         placeholder="••••••••"
       />
 
